@@ -21,7 +21,7 @@ export const USER_REQUEST_WINDOW = parseInt(
 );
 
 export const GLOBAL_RATE_LIMIT = parseInt(
-  process.env.USER_RATE_LIMIT || '0',
+  process.env.GLOBAL_RATE_LIMIT || '0',
   10,
 );
 export const GLOBAL_REQUEST_WINDOW = parseInt(
