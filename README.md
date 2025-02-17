@@ -28,8 +28,8 @@ To implement rate limiting for both individual users and globally across all use
 3. In your `.env` or Vercel environment variables, add the following Upstash credentials:
 
     ```env
-    UPSTASH_REDIS_REST_URL=your-redis-upstash-url
-    UPSTASH_REDIS_REST_TOKEN=your-redis-upstash-token
+    KV_REST_API_URL=your-redis-upstash-url
+    KV_REST_API_TOKEN=your-redis-upstash-token
     ```
 
 The Redis instance is used for storing rate-limiting data for both individual users and globally, ensuring efficient control over the number of requests.

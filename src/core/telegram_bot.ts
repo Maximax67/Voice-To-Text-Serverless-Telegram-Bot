@@ -4,13 +4,15 @@ import { useNewReplies } from 'telegraf/future';
 
 import { BOT_TOKEN } from '../config';
 import { START_MESSAGE } from '../constants';
-import { handleTranscribeRequest } from '../utils';
+import { handleTranscribeRequest, logUnknownError } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
 
 telegramBot.use(useNewReplies());
 
-telegramBot.command('start', async (ctx) =>
+telegramBot.catch((e, ctx) => logUnknownError(ctx, e));
+
+telegramBot.command('start', (ctx) =>
   ctx.reply(START_MESSAGE, { parse_mode: 'HTML' }),
 );
 
@@ -29,7 +31,7 @@ telegramBot.command('transcribe', async (ctx) => {
     return;
   }
 
-  await handleTranscribeRequest(ctx, replyContent);
+  await handleTranscribeRequest(ctx, replyContent, true);
 });
 
 telegramBot.on(message('audio'), async (ctx) =>
