@@ -49,9 +49,9 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **MAX_FILE_SIZE**: Maximum allowed file size for audio files. Default is 10 MB.
 - **MAX_DURATION**: Maximum duration for the audio. Default is 5 minutes (300 seconds).
 - **USER_RATE_LIMIT**: Maximum number of requests per user within the time window. Default is 5 requests.
-- **USER_REQUEST_WINDOW**: Time window for limiting requests from a single user. Default is 60 seconds.
+- **USER_REQUESTS_WINDOW**: Time window for limiting requests from a single user. Default is 60 seconds.
 - **GLOBAL_RATE_LIMIT**: Maximum number of requests from all users within the time window. Default is 60 requests.
-- **GLOBAL_REQUEST_WINDOW**: Time window for global rate limiting. Default is 1 hour (3600 seconds).
+- **GLOBAL_REQUESTS_WINDOW**: Time window for global rate limiting. Default is 1 hour (3600 seconds).
 
 ## Commands
 

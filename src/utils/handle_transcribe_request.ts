@@ -9,9 +9,9 @@ import {
   sendMessageToAdmins,
 } from './logging';
 import { checkRateLimits } from './check_rate_limits';
-import { checkFileExtension } from './check_file_extension';
 import { transcribeFile } from './transcribe_file';
 import { sendTranscription } from './send_transcription';
+import { SUPPORTED_FILE_EXTENSIONS } from '../constants';
 
 import type { Context } from 'telegraf';
 import type {
@@ -58,7 +58,7 @@ export async function handleTranscribeRequest(
         : fileLink.pathname.split(/[\\/]/).pop()!;
 
     const fileExtension = filename.split('.').pop()!.toLowerCase();
-    if (!checkFileExtension(fileExtension)) {
+    if (!SUPPORTED_FILE_EXTENSIONS.has(fileExtension)) {
       await ctx.reply(`Media format not supported: ${fileExtension}`);
       await sendMessageToAdmins(
         ctx,

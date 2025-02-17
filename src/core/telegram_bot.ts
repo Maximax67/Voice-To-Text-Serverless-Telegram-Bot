@@ -50,4 +50,10 @@ telegramBot.on(message('video'), async (ctx) =>
   handleTranscribeRequest(ctx, ctx.message.video),
 );
 
+telegramBot.on('message', async (ctx) => {
+  if (ctx.chat?.type === 'private') {
+    await ctx.reply('Only voice, audio and video messages are supported.');
+  }
+});
+
 export { telegramBot };

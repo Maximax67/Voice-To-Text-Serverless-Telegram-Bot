@@ -1,8 +1,8 @@
 import {
   GLOBAL_RATE_LIMIT,
-  GLOBAL_REQUEST_WINDOW,
+  GLOBAL_REQUESTS_WINDOW,
   USER_RATE_LIMIT,
-  USER_REQUEST_WINDOW,
+  USER_REQUESTS_WINDOW,
 } from '../config';
 import { redis } from '../core';
 import { sendMessageToAdmins } from './logging';
@@ -43,8 +43,8 @@ export async function checkRateLimits(ctx: Context): Promise<boolean> {
   }
 
   if (
-    (!USER_RATE_LIMIT || !USER_REQUEST_WINDOW) &&
-    (!GLOBAL_RATE_LIMIT || !GLOBAL_REQUEST_WINDOW)
+    (!USER_RATE_LIMIT || !USER_REQUESTS_WINDOW) &&
+    (!GLOBAL_RATE_LIMIT || !GLOBAL_REQUESTS_WINDOW)
   ) {
     return true;
   }
@@ -59,8 +59,8 @@ export async function checkRateLimits(ctx: Context): Promise<boolean> {
       [
         USER_RATE_LIMIT,
         GLOBAL_RATE_LIMIT,
-        USER_REQUEST_WINDOW,
-        GLOBAL_REQUEST_WINDOW,
+        USER_REQUESTS_WINDOW,
+        GLOBAL_REQUESTS_WINDOW,
       ],
     );
 

@@ -17,8 +17,8 @@ export const MAX_FILE_SIZE = parseInt(
 export const MAX_DURATION = parseInt(process.env.MAX_DURATION || '0', 10);
 
 export const USER_RATE_LIMIT = parseInt(process.env.USER_RATE_LIMIT || '0', 10);
-export const USER_REQUEST_WINDOW = parseInt(
-  process.env.USER_REQUEST_WINDOW || '0',
+export const USER_REQUESTS_WINDOW = parseInt(
+  process.env.USER_REQUESTS_WINDOW || '0',
   10,
 );
 
@@ -26,8 +26,8 @@ export const GLOBAL_RATE_LIMIT = parseInt(
   process.env.GLOBAL_RATE_LIMIT || '0',
   10,
 );
-export const GLOBAL_REQUEST_WINDOW = parseInt(
-  process.env.GLOBAL_REQUEST_WINDOW || '0',
+export const GLOBAL_REQUESTS_WINDOW = parseInt(
+  process.env.GLOBAL_REQUESTS_WINDOW || '0',
   10,
 );
 
