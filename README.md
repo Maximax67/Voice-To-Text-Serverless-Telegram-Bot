@@ -27,10 +27,10 @@ To implement rate limiting for both individual users and globally across all use
 2. Set up a Redis instance and get the `REST URL` and `Token` from Upstash.
 3. In your `.env` or Vercel environment variables, add the following Upstash credentials:
 
-    ```env
-    KV_REST_API_URL=your-redis-upstash-url
-    KV_REST_API_TOKEN=your-redis-upstash-token
-    ```
+   ```env
+   KV_REST_API_URL=your-redis-upstash-url
+   KV_REST_API_TOKEN=your-redis-upstash-token
+   ```
 
 The Redis instance is used for storing rate-limiting data for both individual users and globally, ensuring efficient control over the number of requests.
 
@@ -52,6 +52,10 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **USER_REQUESTS_WINDOW**: Time window for limiting requests from a single user. Default is 60 seconds.
 - **GLOBAL_RATE_LIMIT**: Maximum number of requests from all users within the time window. Default is 60 requests.
 - **GLOBAL_REQUESTS_WINDOW**: Time window for global rate limiting. Default is 1 hour (3600 seconds).
+- **ADMIN_CHAT_ID**: Admin chat id for logs. Logging disabled if not set or set to 0.
+- **ADMIN_MESSAGE_THREAD_ID**: Admin thread id for logs (if supergroup).
+- **SKIP_LOGGING_FOR_CHATS**: List of chat IDs for which logging should be skipped. Logging is always disabled for `ADMIN_CHAT_ID`.
+- **SKIP_LOGGING_FOR_USERS**: List of user IDs for which logging should be skipped.
 
 ## Commands
 

@@ -1,4 +1,9 @@
-import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID } from '../config';
+import {
+  ADMIN_CHAT_ID,
+  ADMIN_MESSAGE_THREAD_ID,
+  CHATS_WITH_DISABLED_LOGS,
+  USERS_WITH_DISABLED_LOGS,
+} from '../config';
 import type { Context } from 'telegraf';
 
 function formatMessage(
@@ -19,17 +24,27 @@ function formatMessage(
   return `${icon} <code>${chatId}</code> | <code>${userId}</code> <code>${fullName}</code>${username ? ' @' + username : ''}:\n\n${message}`;
 }
 
-export async function sendMediaToAdmins(ctx: Context, isReply: boolean) {
-  const chatId = ctx.chat?.id;
-  const messageId = isReply
-    ? (ctx.message as any).reply_to_message.message_id
-    : ctx.message?.message_id;
+function skipLogging(ctx: Context): boolean {
+  return (
+    !ADMIN_CHAT_ID ||
+    CHATS_WITH_DISABLED_LOGS.has(ctx.message?.chat.id!) ||
+    USERS_WITH_DISABLED_LOGS.has(ctx.from?.id!)
+  );
+}
 
-  if (ADMIN_CHAT_ID && chatId && messageId) {
-    await ctx.telegram.forwardMessage(ADMIN_CHAT_ID, chatId, messageId, {
-      message_thread_id: ADMIN_MESSAGE_THREAD_ID,
-    });
+export async function sendMediaToAdmins(ctx: Context, isReply: boolean) {
+  if (skipLogging(ctx)) {
+    return;
   }
+
+  const message = ctx.message!;
+  const messageId = isReply
+    ? (message as any).reply_to_message.message_id
+    : message.message_id;
+
+  await ctx.telegram.forwardMessage(ADMIN_CHAT_ID, message.chat.id, messageId, {
+    message_thread_id: ADMIN_MESSAGE_THREAD_ID,
+  });
 }
 
 export async function sendMessageToAdmins(
@@ -37,7 +52,9 @@ export async function sendMessageToAdmins(
   message: string,
   isError: boolean = false,
 ) {
-  if (!ADMIN_CHAT_ID) return;
+  if (skipLogging(ctx)) {
+    return;
+  }
 
   const messageFormatted = formatMessage(ctx, message, isError);
   return ctx.telegram.sendMessage(ADMIN_CHAT_ID, messageFormatted, {
@@ -50,7 +67,9 @@ export async function logFileWithTranscription(
   ctx: Context,
   messageIds: number[],
 ) {
-  if (!ADMIN_CHAT_ID) return;
+  if (skipLogging(ctx)) {
+    return;
+  }
 
   await sendMessageToAdmins(ctx, 'Transcibe file', false);
   await ctx.telegram.copyMessages(

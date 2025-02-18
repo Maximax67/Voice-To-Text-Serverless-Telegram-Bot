@@ -36,3 +36,40 @@ export const ADMIN_MESSAGE_THREAD_ID =
   parseInt(process.env.ADMIN_MESSAGE_THREAD_ID || '0', 10) || undefined;
 
 export const MAX_FILE_SIZE_FORMATTED = formatBytesToString(MAX_FILE_SIZE);
+
+const SKIP_LOGGING_FOR_CHATS = (process.env.SKIP_LOGGING_FOR_CHATS || '').split(
+  ',',
+);
+const CHATS_WITH_DISABLED_LOGS = new Set<number>();
+
+for (const chatIdString of SKIP_LOGGING_FOR_CHATS) {
+  if (!chatIdString) {
+    continue;
+  }
+
+  const chatId = +chatIdString;
+  if (chatId) {
+    CHATS_WITH_DISABLED_LOGS.add(chatId);
+  }
+}
+
+if (ADMIN_CHAT_ID) {
+  CHATS_WITH_DISABLED_LOGS.add(ADMIN_CHAT_ID);
+}
+
+const SKIP_LOGGING_FOR_USERS = (process.env.SKIP_LOGGING_FOR_USERS || '').split(
+  ',',
+);
+const USERS_WITH_DISABLED_LOGS = new Set<number>();
+for (const userIdString of SKIP_LOGGING_FOR_USERS) {
+  if (!userIdString) {
+    continue;
+  }
+
+  const userId = +userIdString;
+  if (userId) {
+    USERS_WITH_DISABLED_LOGS.add(userId);
+  }
+}
+
+export { CHATS_WITH_DISABLED_LOGS, USERS_WITH_DISABLED_LOGS };
