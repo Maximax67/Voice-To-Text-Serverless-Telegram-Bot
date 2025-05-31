@@ -1,4 +1,4 @@
-import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID, VERCEL_URL } from '../config';
+import { VERCEL_URL } from '../config';
 import type { Context, Telegraf } from 'telegraf';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { Update } from 'telegraf/typings/core/types/typegram';
