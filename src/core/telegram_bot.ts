@@ -16,6 +16,7 @@ import {
   chatList,
   disableLogging,
   enableLogging,
+  getLogs,
   getReplyContent,
   handleChangeFormatStyle,
   handleChangeLanguage,
@@ -29,10 +30,13 @@ import {
   isAdmin,
   logUnknownError,
   showSettingsMenu,
+  throttleTelegramApi,
   unban,
 } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
+
+throttleTelegramApi(telegramBot);
 
 telegramBot.use(useNewReplies());
 
@@ -83,6 +87,7 @@ telegramBot.command('ban_list', banList);
 telegramBot.command('disable_logging', disableLogging);
 telegramBot.command('enable_logging', enableLogging);
 telegramBot.command('chat_list', chatList);
+telegramBot.command('logs', getLogs);
 
 telegramBot.on(message('audio'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.audio, MediaType.AUDIO),

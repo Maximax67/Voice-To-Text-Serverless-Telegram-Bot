@@ -1,6 +1,7 @@
 export * from './actions';
 export * from './ban';
 export * from './check_rate_limits';
+export * from './escape_html';
 export * from './format_bytes_to_string';
 export * from './formate_date';
 export * from './get_chat_id_from_command';
@@ -11,4 +12,5 @@ export * from './is_admin';
 export * from './logging';
 export * from './send_text';
 export * from './show_settings_menu';
+export * from './throttler';
 export * from './transcribe_file';

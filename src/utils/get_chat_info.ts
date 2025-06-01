@@ -1,18 +1,21 @@
-import type { Client } from 'pg';
-import type { ChatInfo } from '../types';
 import { FormatStyle, Mode } from '../enums';
 import { setupDatabase } from '../core';
+import { escapeHTML } from './escape_html';
+
+import type { Client } from 'pg';
+import type { Context } from 'telegraf';
+import type { ChatInfo } from '../types';
 
 let isDbInitialized = false;
 
 export async function getChatInfo(
   client: Client,
-  chat_id: number,
+  chatId: number,
 ): Promise<ChatInfo> {
   try {
     const result = await client.query<ChatInfo>(
       `SELECT * FROM tg_chats WHERE chat_id = $1;`,
-      [chat_id],
+      [chatId],
     );
 
     isDbInitialized = true;
@@ -25,7 +28,7 @@ export async function getChatInfo(
       `INSERT INTO tg_chats (chat_id, format_style, default_mode)
       VALUES ($1, $2, $3)
       RETURNING *;`,
-      [chat_id, FormatStyle.PLAIN, Mode.TRANSCRIBE],
+      [chatId, FormatStyle.PLAIN, Mode.TRANSCRIBE],
     );
 
     return insertResult.rows[0];
@@ -38,8 +41,32 @@ export async function getChatInfo(
     ) {
       isDbInitialized = true;
       await setupDatabase();
-      return getChatInfo(client, chat_id);
+      return getChatInfo(client, chatId);
     }
     throw error;
   }
+}
+
+export async function getChatName(
+  ctx: Context,
+  chatId: number,
+): Promise<string | null> {
+  try {
+    const chat = await ctx.telegram.getChat(chatId);
+    if (chat.type === 'private') {
+      if (chat.username) {
+        return `@${chat.username}`;
+      }
+
+      if (chat.last_name) {
+        return `${chat.first_name} ${chat.last_name}`;
+      }
+
+      return chat.first_name;
+    }
+
+    return chat.title;
+  } catch {}
+
+  return null;
 }

@@ -82,6 +82,7 @@ Commands only for admins set in `ADMINS_IDS` env variable:
 - **/disable_logging {chatId}**: Disable logging.
 - **/enable_logging {chatId}**: Enable logging.
 - **/chat_list**: Get list of chats where bot was used.
+- **/logs {chatId}**: Get request logs for chat.
 
 ## Supported Audio Formats
 
