@@ -2,6 +2,7 @@ import { formatDate } from './formate_date';
 import { isGlobalAdmin } from './is_admin';
 import { getClient, redis } from '../core';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
+import { MAX_TELEGRAM_MESSAGE_LENGTH } from '../constants';
 
 import type { Context } from 'telegraf';
 
@@ -105,12 +106,30 @@ export async function banList(ctx: Context) {
     return;
   }
 
-  const records = res.rows
-    .map(
-      (row) =>
-        `<code>${row.chat_id}</code> - ${formatDate(row.banned_timestamp)}`,
-    )
-    .join('\n');
+  const header = '<b>Banned chats:</b>';
+  const records = res.rows.map(
+    (row) =>
+      `<code>${row.chat_id}</code> - ${formatDate(row.banned_timestamp)}`,
+  );
 
-  await ctx.reply(`<b>Banned chats:</b>\n${records}`, { parse_mode: 'HTML' });
+  const messages: string[] = [];
+  let currentMessage = header;
+
+  for (const record of records) {
+    const joinedMessage = currentMessage + '\n' + record;
+    if (joinedMessage.length > MAX_TELEGRAM_MESSAGE_LENGTH) {
+      messages.push(currentMessage.trim());
+      currentMessage = record;
+    } else {
+      currentMessage = joinedMessage;
+    }
+  }
+
+  if (currentMessage) {
+    messages.push(currentMessage);
+  }
+
+  for (const message of messages) {
+    await ctx.reply(message, { parse_mode: 'HTML' });
+  }
 }

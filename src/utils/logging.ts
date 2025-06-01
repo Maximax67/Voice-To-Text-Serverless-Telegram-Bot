@@ -6,6 +6,7 @@ import { isGlobalAdmin } from './is_admin';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
 import { formatDate } from './formate_date';
 import { getChatName } from './get_chat_info';
+import { MAX_TELEGRAM_MESSAGE_LENGTH } from '../constants';
 
 import type { Client, QueryResult } from 'pg';
 import type { Context } from 'telegraf';
@@ -260,9 +261,27 @@ export async function chatList(ctx: Context): Promise<void> {
     }),
   );
 
-  await ctx.reply(`<b>Chats list</b>\n\n${lines.join('\n\n')}`, {
-    parse_mode: 'HTML',
-  });
+  const header = '<b>Chats list</b>\n';
+  const messages: string[] = [];
+  let currentMessage = header;
+
+  for (const line of lines) {
+    const joinedMessage = currentMessage + '\n' + line;
+    if (joinedMessage.length > MAX_TELEGRAM_MESSAGE_LENGTH) {
+      messages.push(currentMessage);
+      currentMessage = line;
+    } else {
+      currentMessage = joinedMessage;
+    }
+  }
+
+  if (currentMessage) {
+    messages.push(currentMessage);
+  }
+
+  for (const message of messages) {
+    await ctx.reply(message, { parse_mode: 'HTML' });
+  }
 }
 
 export async function getLogs(ctx: Context): Promise<void> {
