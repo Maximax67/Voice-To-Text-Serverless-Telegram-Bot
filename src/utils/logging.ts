@@ -261,7 +261,7 @@ export async function chatList(ctx: Context): Promise<void> {
     }),
   );
 
-  const header = '<b>Chats list</b>\n';
+  const header = '<b>Chat list</b>\n';
   const messages: string[] = [];
   let currentMessage = header;
 
