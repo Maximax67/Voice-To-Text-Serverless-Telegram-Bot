@@ -261,9 +261,8 @@ export async function chatList(ctx: Context): Promise<void> {
     }),
   );
 
-  const header = '<b>Chat list</b>\n';
   const messages: string[] = [];
-  let currentMessage = header;
+  let currentMessage = '';
 
   for (const line of lines) {
     const joinedMessage = currentMessage + '\n' + line;

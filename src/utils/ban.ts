@@ -106,14 +106,13 @@ export async function banList(ctx: Context) {
     return;
   }
 
-  const header = '<b>Banned chats:</b>';
   const records = res.rows.map(
     (row) =>
       `<code>${row.chat_id}</code> - ${formatDate(row.banned_timestamp)}`,
   );
 
   const messages: string[] = [];
-  let currentMessage = header;
+  let currentMessage = '';
 
   for (const record of records) {
     const joinedMessage = currentMessage + '\n' + record;
