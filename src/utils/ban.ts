@@ -19,7 +19,7 @@ export async function ban(ctx: Context) {
   const client = await getClient();
   const res = await client.query(
     `
-    UPDATE tg_chats
+    UPDATE chats
     SET banned_timestamp = CASE
       WHEN banned_timestamp IS NULL THEN NOW()
       ELSE banned_timestamp
@@ -62,7 +62,7 @@ export async function unban(ctx: Context) {
   const client = await getClient();
   const res = await client.query(
     `
-    UPDATE tg_chats
+    UPDATE chats
     SET banned_timestamp = CASE
       WHEN banned_timestamp IS NOT NULL THEN NULL
       ELSE banned_timestamp
@@ -98,7 +98,7 @@ export async function banList(ctx: Context) {
 
   const client = await getClient();
   const res = await client.query(
-    'SELECT chat_id, banned_timestamp FROM tg_chats WHERE banned_timestamp IS NOT NULL ORDER BY banned_timestamp',
+    'SELECT chat_id, banned_timestamp FROM chats WHERE banned_timestamp IS NOT NULL ORDER BY banned_timestamp',
   );
 
   if (res.rowCount === 0) {

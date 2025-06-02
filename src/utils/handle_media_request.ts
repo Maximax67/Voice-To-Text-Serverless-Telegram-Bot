@@ -28,6 +28,8 @@ export async function handleMediaRequest(
   isReply: boolean = false,
   mode?: Mode,
 ) {
+  const startTime = Date.now();
+
   if (!(await checkRateLimits(ctx))) return;
 
   const chatId = ctx.chat!.id;
@@ -83,9 +85,12 @@ export async function handleMediaRequest(
     user_id: userId,
     file_type: fileExtension,
     language: mode === Mode.TRANSLATE ? 'en' : chatInfo.language,
-    is_error: false,
     response: null,
+    error: null,
     logged_message_id: null,
+    api_request_time: null,
+    media_download_time: null,
+    total_request_time: 0,
   };
 
   if ('forward_origin' in message && message.forward_origin) {
@@ -115,18 +120,20 @@ export async function handleMediaRequest(
   }
 
   if (errors.length) {
-    const errorMessage = errors.join('\n');
+    const errorMessage = errors.join(' ');
+
     await ctx.reply(errorMessage);
 
     if (chatInfo.logging_enabled) {
-      requestInfo.is_error = true;
-      requestInfo.response = errorMessage;
+      requestInfo.error = errorMessage;
 
       try {
         await sendMessageToAdmins(ctx, errorMessage);
         const loggedMessage = await sendMediaToAdmins(ctx, isReply);
         requestInfo.logged_message_id = loggedMessage.message_id;
       } finally {
+        requestInfo.error += ' Can not send media to admins!';
+        requestInfo.total_request_time = Date.now() - startTime;
         await logRequest(client, requestInfo);
       }
     }
@@ -137,19 +144,24 @@ export async function handleMediaRequest(
   let isTranscriptionSent = false;
 
   try {
+    const mediaDownloadStart = Date.now();
     const fileResponse = await fetch(fileLink);
     if (!fileResponse.ok) {
       throw new Error('Failed to fetch file from Telegram!');
     }
 
     const blob = await fileResponse.blob();
+    requestInfo.media_download_time = Date.now() - mediaDownloadStart;
 
     if (filename.endsWith('.oga')) {
-      filename = filename.replace(/\.oga$/, '.ogg');
+      filename = filename.replace(/a$/, 'g');
     }
 
     const mediaFile = new File([blob], filename);
+
+    const apiStart = Date.now();
     const textResponse = await processFile(mediaFile, mode, chatInfo.language);
+    requestInfo.api_request_time = Date.now() - apiStart;
 
     if (
       !textResponse ||
@@ -164,6 +176,7 @@ export async function handleMediaRequest(
         await sendMessageToAdmins(ctx, 'Speech not detected');
         const loggedMessage = await sendMediaToAdmins(ctx, isReply);
         requestInfo.logged_message_id = loggedMessage.message_id;
+        requestInfo.total_request_time = Date.now() - startTime;
       }
 
       return;
@@ -173,15 +186,16 @@ export async function handleMediaRequest(
     const messageIds = await sendText(ctx, textResponse, chatInfo.format_style);
     isTranscriptionSent = true;
 
-    if (isReply) {
-      messageIds[0] = (ctx.message as any).reply_to_message.message_id;
-    }
+    if (chatInfo.logging_enabled) {
+      if (isReply) {
+        messageIds[0] = (ctx.message as any).reply_to_message.message_id;
+      }
 
-    const loggedMessageIds = await logFileWithTranscription(ctx, messageIds);
-    requestInfo.logged_message_id = loggedMessageIds[0].message_id;
+      const loggedMessageIds = await logFileWithTranscription(ctx, messageIds);
+      requestInfo.logged_message_id = loggedMessageIds[0].message_id;
+    }
   } catch (error: unknown) {
     console.error(error);
-    requestInfo.is_error = true;
 
     const errorMessage = `${error}`;
     const formatAdminMessage = (message: string) =>
@@ -189,14 +203,16 @@ export async function handleMediaRequest(
 
     if (isTranscriptionSent) {
       if (requestInfo.response) {
-        requestInfo.response = `${errorMessage}. Transcription: ${requestInfo.response}`;
+        requestInfo.error = errorMessage;
         await sendMessageToAdmins(
           ctx,
-          formatAdminMessage('Transcription was sent successfully!'),
+          formatAdminMessage(
+            `Transcription was sent successfully: ${requestInfo.response}`,
+          ),
           true,
         );
       } else {
-        requestInfo.response = `${errorMessage}. Speech not detected!`;
+        requestInfo.error = `${errorMessage}. Speech not detected!`;
         await sendMessageToAdmins(
           ctx,
           formatAdminMessage('Speech not detected!'),
@@ -204,7 +220,7 @@ export async function handleMediaRequest(
         );
       }
     } else {
-      requestInfo.response = errorMessage;
+      requestInfo.error = errorMessage;
       await ctx.reply('Error processing media');
       await sendMessageToAdmins(ctx, formatAdminMessage(''), true);
     }
@@ -213,9 +229,10 @@ export async function handleMediaRequest(
       const loggedMessage = await sendMediaToAdmins(ctx, isReply);
       requestInfo.logged_message_id = loggedMessage.message_id;
     } catch {
-      requestInfo.response += '. Unable to send media to admins!';
+      requestInfo.error += '. Unable to send media to admins!';
     }
   } finally {
+    requestInfo.total_request_time = Date.now() - startTime;
     if (chatInfo.logging_enabled) {
       await logRequest(client, requestInfo);
     }

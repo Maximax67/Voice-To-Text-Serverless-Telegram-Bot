@@ -29,10 +29,13 @@ const query = `
     file_size,
     duration,
     response,
+    error,
     language,
-    is_error
+    media_download_time,
+    api_request_time,
+    total_request_time
   ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
   );
 `;
 
@@ -54,8 +57,11 @@ export async function logRequest(
     requestInfo.file_size,
     requestInfo.duration,
     requestInfo.response,
+    requestInfo.error,
     requestInfo.language,
-    requestInfo.is_error,
+    requestInfo.media_download_time,
+    requestInfo.api_request_time,
+    requestInfo.total_request_time,
   ]);
 }
 
@@ -169,7 +175,7 @@ export async function enableLogging(ctx: Context): Promise<void> {
 
   const client = await getClient();
   const res = await client.query(
-    'UPDATE tg_chats SET logging_enabled = TRUE WHERE chat_id = $1 RETURNING chat_id;',
+    'UPDATE chats SET logging_enabled = TRUE WHERE chat_id = $1 RETURNING chat_id;',
     [chatId],
   );
 
@@ -197,7 +203,7 @@ export async function disableLogging(ctx: Context): Promise<void> {
 
   const client = await getClient();
   const res = await client.query(
-    'UPDATE tg_chats SET logging_enabled = FALSE WHERE chat_id = $1 RETURNING chat_id;',
+    'UPDATE chats SET logging_enabled = FALSE WHERE chat_id = $1 RETURNING chat_id;',
     [chatId],
   );
 
@@ -226,7 +232,7 @@ export async function chatList(ctx: Context): Promise<void> {
       c.created_at,
       MAX(r.timestamp) AS last_usage,
       COUNT(r.timestamp) AS usage_count
-    FROM tg_chats c
+    FROM chats c
     LEFT JOIN media_requests r ON c.chat_id = r.chat_id
     GROUP BY c.chat_id, c.banned_timestamp, c.logging_enabled, c.created_at
     ORDER BY last_usage DESC NULLS LAST, c.created_at DESC;
@@ -295,7 +301,7 @@ export async function getLogs(ctx: Context): Promise<void> {
 
   const client = await getClient();
   const chatRes = await client.query<ChatInfo>(
-    'SELECT chat_id FROM tg_chats WHERE chat_id = $1;',
+    'SELECT chat_id FROM chats WHERE chat_id = $1;',
     [chatId],
   );
 

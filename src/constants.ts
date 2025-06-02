@@ -49,7 +49,7 @@ export const INVALID_MESSAGE_TYPE_ERROR =
   'Only voice, audio and video messages are supported!';
 
 export const NON_ADMINS_ACCESS_SETTINGS_ERROR =
-  'Only admins can access settings in group tg_chats!';
+  'Only admins can access settings in group chats!';
 
 export const LANGUAGE_CODES: Record<string, string> = {
   af: 'Afrikaans',

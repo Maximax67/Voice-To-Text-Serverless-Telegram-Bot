@@ -51,7 +51,7 @@ export async function handleSetLanguage(
   const chatId = ctx.chat!.id;
   const client = await getClient();
   await client.query(
-    'UPDATE tg_chats SET language = $1, edited_at = CURRENT_TIMESTAMP WHERE chat_id = $2;',
+    'UPDATE chats SET language = $1, edited_at = CURRENT_TIMESTAMP WHERE chat_id = $2;',
     [lang === 'all' ? null : lang, chatId],
   );
 
@@ -113,7 +113,7 @@ export async function handleSetFormatStyle(
   const chatId = ctx.chat!.id;
   const client = await getClient();
   await client.query(
-    'UPDATE tg_chats SET format_style = $1, edited_at = CURRENT_TIMESTAMP WHERE chat_id = $2;',
+    'UPDATE chats SET format_style = $1, edited_at = CURRENT_TIMESTAMP WHERE chat_id = $2;',
     [style, chatId],
   );
 
@@ -133,7 +133,7 @@ export async function handleSetMode(
   const chatId = ctx.chat!.id;
   const client = await getClient();
   await client.query(
-    'UPDATE tg_chats SET default_mode = $1, edited_at = CURRENT_TIMESTAMP WHERE chat_id = $2;',
+    'UPDATE chats SET default_mode = $1, edited_at = CURRENT_TIMESTAMP WHERE chat_id = $2;',
     [mode, chatId],
   );
 

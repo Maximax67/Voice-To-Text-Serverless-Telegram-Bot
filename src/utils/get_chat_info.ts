@@ -14,7 +14,7 @@ export async function getChatInfo(
 ): Promise<ChatInfo> {
   try {
     const result = await client.query<ChatInfo>(
-      `SELECT * FROM tg_chats WHERE chat_id = $1;`,
+      `SELECT * FROM chats WHERE chat_id = $1;`,
       [chatId],
     );
 
@@ -25,7 +25,7 @@ export async function getChatInfo(
     }
 
     const insertResult = await client.query<ChatInfo>(
-      `INSERT INTO tg_chats (chat_id, format_style, default_mode)
+      `INSERT INTO chats (chat_id, format_style, default_mode)
       VALUES ($1, $2, $3)
       RETURNING *;`,
       [chatId, FormatStyle.PLAIN, Mode.TRANSCRIBE],

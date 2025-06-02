@@ -33,6 +33,9 @@ export interface RequestInfo {
   file_size: number;
   duration: number;
   response: string | null;
+  error: string | null;
   language: string | null;
-  is_error: boolean;
+  media_download_time: number | null;
+  api_request_time: number | null;
+  total_request_time: number;
 }

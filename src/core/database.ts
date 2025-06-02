@@ -54,7 +54,7 @@ export async function setupDatabase() {
     END
     $$;
 
-    CREATE TABLE IF NOT EXISTS tg_chats (
+    CREATE TABLE IF NOT EXISTS chats (
       chat_id BIGINT PRIMARY KEY,
       language language_enum,
       format_style format_style_enum NOT NULL,
@@ -70,7 +70,7 @@ export async function setupDatabase() {
       user_id BIGINT NOT NULL,
       forward_chat_id BIGINT,
       is_forward BOOLEAN NOT NULL DEFAULT FALSE,
-      chat_id BIGINT NOT NULL REFERENCES tg_chats(chat_id) ON DELETE CASCADE,
+      chat_id BIGINT NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
       mode SMALLINT NOT NULL,
       message_id INT NOT NULL,
       media_type media_type_enum NOT NULL,
@@ -80,8 +80,11 @@ export async function setupDatabase() {
       file_size INT NOT NULL,
       duration INT NOT NULL,
       response TEXT,
+      error TEXT,
       language language_enum,
-      is_error BOOLEAN NOT NULL DEFAULT FALSE,
+      media_download_time INT,
+      api_request_time INT,
+      total_request_time INT NOT NULL,
       timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
