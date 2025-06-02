@@ -10,6 +10,7 @@ export * from './get_reply_content';
 export * from './handle_media_request';
 export * from './is_admin';
 export * from './logging';
+export * from './migrate_chat';
 export * from './send_text';
 export * from './show_settings_menu';
 export * from './throttler';

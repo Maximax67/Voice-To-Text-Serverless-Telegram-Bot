@@ -29,6 +29,7 @@ import {
   handleSettingsBack,
   isAdmin,
   logUnknownError,
+  migrateChatMiddleware,
   showSettingsMenu,
   throttleTelegramApi,
   unban,
@@ -105,6 +106,7 @@ telegramBot.on(message('video'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.video, MediaType.VIDEO),
 );
 
+telegramBot.on('message', migrateChatMiddleware);
 telegramBot.on('message', async (ctx) => {
   if (ctx.chat?.type === 'private') {
     await ctx.reply(INVALID_MESSAGE_TYPE_ERROR);
