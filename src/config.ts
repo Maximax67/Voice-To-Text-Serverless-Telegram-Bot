@@ -41,6 +41,8 @@ export const ADMIN_MESSAGE_THREAD_ID =
 
 export const MAX_FILE_SIZE_FORMATTED = formatBytesToString(MAX_FILE_SIZE);
 
+export const UTC_OFFSET = parseInt(process.env.UTC_OFFSET || '0', 10);
+
 const GLOBAL_ADMINS_VALUES = (process.env.ADMINS_IDS || '').split(',');
 const GLOBAL_ADMINS = new Set<number>();
 for (const userIdString of GLOBAL_ADMINS_VALUES) {

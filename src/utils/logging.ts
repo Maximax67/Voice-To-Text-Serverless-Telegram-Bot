@@ -231,7 +231,7 @@ export async function chatList(ctx: Context): Promise<void> {
       c.logging_enabled,
       c.created_at,
       MAX(r.timestamp) AS last_usage,
-      COUNT(r.timestamp) AS usage_count
+      COUNT(r.id) AS usage_count
     FROM chats c
     LEFT JOIN media_requests r ON c.chat_id = r.chat_id
     GROUP BY c.chat_id, c.banned_timestamp, c.logging_enabled, c.created_at

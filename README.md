@@ -64,6 +64,7 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **ADMIN_CHAT_ID**: Admin chat id for logs. Logging disabled if not set or set to 0.
 - **ADMIN_MESSAGE_THREAD_ID**: Admin thread id for logs (if supergroup).
 - **ADMINS_IDS**: List of admins separated by comma ids for ban and unban features.
+- **UTC_OFFSET**: Sets the time difference from UTC in hours. Use a positive number for time zones ahead of UTC (e.g. `2` for UTC+2), and a negative number for those behind (e.g. `-5` for UTC-5).
 
 ## Commands
 
