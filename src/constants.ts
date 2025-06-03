@@ -31,7 +31,8 @@ export const START_MESSAGE =
   'You can also use the following commands:\n' +
   '<b>/transcribe</b> - Transcribe the replied-to audio or video message\n' +
   '<b>/translate</b> - Translate the replied-to message to English\n' +
-  '<b>/settings</b> - Open the settings menu (chat admins only)\n\n' +
+  '<b>/settings</b> - Open the settings menu (chat admins only)\n' +
+  '<b>/stats</b> - Show chat statistics\n\n' +
   `Maximum file size: <b>${MAX_FILE_SIZE_FORMATTED}</b>\n` +
   `Maximum audio length: <b>${MAX_DURATION ? MAX_DURATION + ' seconds' : 'unlimited'}</b>\n\n` +
   '<b>Rate limits:</b>\n' +

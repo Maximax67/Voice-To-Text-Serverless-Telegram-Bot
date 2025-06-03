@@ -34,6 +34,7 @@ import {
   showSettingsMenu,
   throttleTelegramApi,
   unban,
+  showChatStatistics,
 } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
@@ -90,6 +91,7 @@ telegramBot.command('enable_logging', enableLogging);
 telegramBot.command('chat_list', chatList);
 telegramBot.command('logs', async (ctx) => getLogs(ctx, true));
 telegramBot.command('logs_json', async (ctx) => getLogs(ctx, false));
+telegramBot.command('stats', showChatStatistics);
 
 telegramBot.on(message('audio'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.audio, MediaType.AUDIO),

@@ -74,6 +74,7 @@ Public commands:
 - **/transcribe**: Responds to a voice message to convert it into text. Simply reply to an audio message.
 - **/translate**: Translate the replied-to message to English.
 - **/settings**: Open the settings menu (chat admins only).
+- **/stats**: Show chat statistics.
 
 Commands only for admins set in `ADMINS_IDS` env variable:
 
