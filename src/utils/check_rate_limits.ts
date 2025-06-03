@@ -88,14 +88,14 @@ export async function checkRateLimits(ctx: Context): Promise<boolean> {
   }
 
   if (USER_RATE_LIMIT > 0 && userCount > USER_RATE_LIMIT) {
-    await ctx.reply('You exceeded requests limit');
+    await ctx.reply('You exceeded the request limit');
     await sendMessageToAdmins(ctx, 'User rate limit exceeded');
     return false;
   }
 
   if (GLOBAL_RATE_LIMIT > 0 && globalCount > GLOBAL_RATE_LIMIT) {
-    await ctx.reply('Global requests limit exceeded');
-    await sendMessageToAdmins(ctx, 'Global requests limit exceeded', true);
+    await ctx.reply('Global request limit exceeded');
+    await sendMessageToAdmins(ctx, 'Global request limit exceeded', true);
     return false;
   }
 
