@@ -1,7 +1,7 @@
 {
-  "name": "tg-uploader-bot",
+  "name": "voice-to-text-serverless-telegram-bot",
   "version": "1.0.0",
-  "description": "Telegram Image Uploader Bot",
+  "description": "Voice To Text Serverless Telegram Bot",
   "main": "src/index.ts",
   "author": "Maksym Bielikov",
   "scripts": {
