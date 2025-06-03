@@ -7,11 +7,11 @@ const options: Intl.DateTimeFormatOptions = {
   hour12: false,
 };
 
+const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', options);
+
 export function formatDateTime(date: string | Date): string {
   const dateObject = date instanceof Date ? date : new Date(date);
-  const parts = new Intl.DateTimeFormat('en-GB', options).formatToParts(
-    dateObject,
-  );
+  const parts = dateTimeFormatter.formatToParts(dateObject);
 
   const day = parts.find((p) => p.type === 'day')?.value ?? '';
   const month = parts.find((p) => p.type === 'month')?.value ?? '';
