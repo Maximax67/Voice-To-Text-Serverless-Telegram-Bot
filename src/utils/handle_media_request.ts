@@ -131,8 +131,9 @@ export async function handleMediaRequest(
         await sendMessageToAdmins(ctx, errorMessage);
         const loggedMessage = await sendMediaToAdmins(ctx, isReply);
         requestInfo.logged_message_id = loggedMessage.message_id;
-      } finally {
+      } catch {
         requestInfo.error += ' Can not send media to admins!';
+      } finally {
         requestInfo.total_request_time = Date.now() - startTime;
         await logRequest(client, requestInfo);
       }
