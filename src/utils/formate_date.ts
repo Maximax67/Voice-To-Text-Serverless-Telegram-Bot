@@ -4,6 +4,8 @@ const options: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
-export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', options);
+export function formatDate(date: string | Date): string {
+  const dateObject = date instanceof Date ? date : new Date(date);
+
+  return dateObject.toLocaleDateString('en-US', options);
 }

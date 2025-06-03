@@ -153,7 +153,7 @@ export async function logUnknownError(ctx: Context, e: unknown): Promise<void> {
 
       message = title + stack;
     } else {
-      message = escapeHTML(`${e}`);
+      message = escapeHTML(String(e));
     }
 
     await ctx.telegram.sendMessage(ADMIN_CHAT_ID, `🚨 ${message}`, {
@@ -289,67 +289,109 @@ export async function chatList(ctx: Context): Promise<void> {
   }
 }
 
-export async function getLogs(ctx: Context): Promise<void> {
+export async function getLogs(ctx: Context, isCsv: boolean): Promise<void> {
   const userId = ctx.from?.id;
   if (!userId || !isGlobalAdmin(userId)) return;
 
   const chatId = getChatIdFromCommand(ctx);
   if (!chatId) {
-    await ctx.reply('Usage: /logs {chatId}');
-    return;
+    if ((ctx.message as Message.TextMessage).text.indexOf(' ') !== -1) {
+      await ctx.reply(`Usage: /logs${isCsv ? '' : '_json'} {chatId}`);
+      return;
+    }
   }
+
+  let logs: RequestInfo[];
+  let filenamePart: string;
+  let captionPart: string;
 
   const client = await getClient();
-  const chatRes = await client.query<ChatInfo>(
-    'SELECT chat_id FROM chats WHERE chat_id = $1;',
-    [chatId],
-  );
+  if (chatId) {
+    const chatRes = await client.query<ChatInfo>(
+      'SELECT chat_id FROM chats WHERE chat_id = $1;',
+      [chatId],
+    );
 
-  if (chatRes.rowCount === 0) {
-    await ctx.reply('Chat not found.');
-    return;
+    if (chatRes.rowCount === 0) {
+      await ctx.reply('Chat not found.');
+      return;
+    }
+
+    const reqRes = await client.query<RequestInfo>(
+      'SELECT * FROM media_requests WHERE chat_id = $1 ORDER BY id;',
+      [chatId],
+    );
+    logs = reqRes.rows;
+
+    const chatName = await getChatName(ctx, chatId);
+
+    filenamePart = chatName
+      ? `${chatId}_${chatName.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')}`
+      : chatId.toString();
+    captionPart = chatName
+      ? `<code>${escapeHTML(chatName)}</code> (<code>${chatId}</code>)`
+      : `<code>${chatId}</code>`;
+  } else {
+    const reqRes = await client.query<RequestInfo>(
+      'SELECT * FROM media_requests ORDER BY id;',
+    );
+    logs = reqRes.rows;
+    filenamePart = 'all';
+    captionPart = 'all chats';
   }
-
-  const reqRes = await client.query<RequestInfo>(
-    'SELECT * FROM media_requests WHERE chat_id = $1 ORDER BY timestamp;',
-    [chatId],
-  );
-  const logs = reqRes.rows;
 
   if (!logs.length) {
-    await ctx.reply('No logs found for this chat.');
+    await ctx.reply(chatId ? 'No logs found for this chat!' : 'No logs found!');
     return;
   }
-
-  let chatName = await getChatName(ctx, chatId);
-
-  const json = JSON.stringify(logs, null, 2);
-  const stream = Readable.from([json]);
 
   const now = new Date();
   const dateString = now.toLocaleDateString('en-GB').replace(/\//g, '-');
   const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
 
-  if (!chatName) {
-    const filename = `chatlog_${chatId}_${dateString}_${timeString}.json`;
+  const baseFilename = `chatlog_${filenamePart}_${dateString}_${timeString}`;
+
+  if (isCsv) {
+    function escapeCSV(val: any): string {
+      if (val === null || val === undefined) return '';
+      if (val instanceof Date) {
+        return `"${val.toISOString()}"`;
+      }
+
+      let str = String(val);
+      str = str.replace(/"/g, '""');
+      return `"${str}"`;
+    }
+
+    const csvHeaders = Object.keys(logs[0]);
+    const csvRows = [
+      csvHeaders.map(escapeCSV).join(','),
+      ...logs.map((row) =>
+        csvHeaders.map((h) => escapeCSV(row[h as keyof RequestInfo])).join(','),
+      ),
+    ];
+
+    const csvContent = csvRows.join('\r\n');
+    const csvStream = Readable.from([csvContent]);
 
     await ctx.replyWithDocument(
-      { source: stream, filename },
-      { caption: `Logs for chat <code>${chatId}</code>`, parse_mode: 'HTML' },
+      { source: csvStream, filename: `${baseFilename}.csv` },
+      {
+        caption: `CSV logs for ${captionPart}`,
+        parse_mode: 'HTML',
+      },
     );
+
     return;
   }
 
-  const safeChatName = chatName
-    .replace(/[\\/:*?"<>|]/g, '')
-    .replace(/\s+/g, '_');
-
-  const filename = `chatlog_${chatId}_${safeChatName}_${dateString}_${timeString}.json`;
+  const json = JSON.stringify(logs);
+  const stream = Readable.from([json]);
 
   await ctx.replyWithDocument(
-    { source: stream, filename },
+    { source: stream, filename: `${baseFilename}.json` },
     {
-      caption: `Logs for chat <code>${escapeHTML(chatName)}</code> (<code>${chatId}</code>)`,
+      caption: `JSON logs for ${captionPart}`,
       parse_mode: 'HTML',
     },
   );

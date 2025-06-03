@@ -14,9 +14,9 @@ export interface ChatInfo {
   format_style: FormatStyle;
   default_mode: Mode | null;
   logging_enabled: boolean;
-  banned_timestamp: string;
-  created_at: string;
-  edited_at: string;
+  banned_timestamp: Date;
+  created_at: Date;
+  edited_at: Date;
 }
 
 export interface RequestInfo {

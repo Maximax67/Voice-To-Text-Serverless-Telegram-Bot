@@ -197,7 +197,7 @@ export async function handleMediaRequest(
   } catch (error: unknown) {
     console.error(error);
 
-    const errorMessage = `${error}`;
+    const errorMessage = String(error);
     const formatAdminMessage = (message: string) =>
       `Error processing media: <code>${errorMessage}</code>. ${message}`;
 

@@ -88,7 +88,8 @@ telegramBot.command('ban_list', banList);
 telegramBot.command('disable_logging', disableLogging);
 telegramBot.command('enable_logging', enableLogging);
 telegramBot.command('chat_list', chatList);
-telegramBot.command('logs', getLogs);
+telegramBot.command('logs', async (ctx) => getLogs(ctx, true));
+telegramBot.command('logs_json', async (ctx) => getLogs(ctx, false));
 
 telegramBot.on(message('audio'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.audio, MediaType.AUDIO),
