@@ -3,7 +3,7 @@ export * from './ban';
 export * from './check_rate_limits';
 export * from './escape_html';
 export * from './format_bytes_to_string';
-export * from './formate_datetime';
+export * from './format_datetime';
 export * from './get_chat_id_from_command';
 export * from './get_chat_info';
 export * from './get_reply_content';

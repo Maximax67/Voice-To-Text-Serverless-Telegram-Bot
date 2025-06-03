@@ -4,7 +4,7 @@ import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID } from '../config';
 import { getClient } from '../core';
 import { isGlobalAdmin } from './is_admin';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
-import { formatDateTime } from './formate_datetime';
+import { formatDateTime } from './format_datetime';
 import { getChatName } from './get_chat_info';
 import { MAX_TELEGRAM_MESSAGE_LENGTH } from '../constants';
 
@@ -246,7 +246,9 @@ export async function chatList(ctx: Context): Promise<void> {
   const lines = await Promise.all(
     res.rows.map(async (row) => {
       const loggingIcon = row.logging_enabled ? '📝' : '🔏';
-      const lastUsage = row.last_usage ? formatDateTime(row.last_usage) : 'never';
+      const lastUsage = row.last_usage
+        ? formatDateTime(row.last_usage)
+        : 'never';
       const createdAt = formatDateTime(row.created_at);
       const bannedIcon = row.banned_timestamp ? '🚫' : '✔️';
       const chatName = await getChatName(ctx, row.chat_id);

@@ -1,4 +1,4 @@
-import { formatDateTime } from './formate_datetime';
+import { formatDateTime } from './format_datetime';
 import { isGlobalAdmin } from './is_admin';
 import { getClient, redis } from '../core';
 import { getChatIdFromCommand } from './get_chat_id_from_command';

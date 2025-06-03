@@ -3,7 +3,7 @@ import { Markup } from 'telegraf';
 import { LANGUAGE_CODES } from '../constants';
 import { Mode } from '../enums';
 import { getClient } from '../core';
-import { formatDateTime } from './formate_datetime';
+import { formatDateTime } from './format_datetime';
 import { getChatInfo } from './get_chat_info';
 
 import type { Context } from 'telegraf';
