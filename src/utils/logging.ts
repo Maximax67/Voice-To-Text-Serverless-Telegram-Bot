@@ -262,9 +262,9 @@ export async function chatList(ctx: Context): Promise<void> {
 
       return (
         result +
-        `Requests: <code>${row.usage_count}</code>\n` +
-        `Last usage: <code>${lastUsage}</code>\n` +
-        `Joined on: <code>${createdAt}</code>\n`
+        `Requests: ${row.usage_count}\n` +
+        `Last usage: ${lastUsage}\n` +
+        `Joined on: ${createdAt}\n`
       );
     }),
   );
