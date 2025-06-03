@@ -28,6 +28,7 @@ import {
   handleSetMode,
   handleSettingsBack,
   isAdmin,
+  joinChat,
   logUnknownError,
   migrateChatMiddleware,
   showSettingsMenu,
@@ -40,10 +41,9 @@ const telegramBot = new Telegraf(BOT_TOKEN);
 throttleTelegramApi(telegramBot);
 
 telegramBot.use(useNewReplies());
+telegramBot.catch(logUnknownError);
 
-telegramBot.catch((e, ctx) => logUnknownError(ctx, e));
-
-telegramBot.command('start', (ctx) =>
+telegramBot.command('start', async (ctx) =>
   ctx.reply(START_MESSAGE, { parse_mode: 'HTML' }),
 );
 
@@ -107,6 +107,7 @@ telegramBot.on(message('video'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.video, MediaType.VIDEO),
 );
 
+telegramBot.on('my_chat_member', joinChat);
 telegramBot.on('message', migrateChatMiddleware);
 telegramBot.on('message', async (ctx) => {
   if (ctx.chat?.type === 'private') {

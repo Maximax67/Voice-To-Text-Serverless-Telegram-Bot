@@ -1,6 +1,5 @@
 import { FormatStyle, Mode } from '../enums';
 import { setupDatabase } from '../core';
-import { escapeHTML } from './escape_html';
 
 import type { Client } from 'pg';
 import type { Context } from 'telegraf';
@@ -43,6 +42,34 @@ export async function getChatInfo(
       await setupDatabase();
       return getChatInfo(client, chatId);
     }
+    throw error;
+  }
+}
+
+export async function ensureChatRecord(
+  client: Client,
+  chatId: number,
+): Promise<void> {
+  try {
+    await client.query(
+      `INSERT INTO chats (chat_id, format_style, default_mode)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (chat_id) DO NOTHING;`,
+      [chatId, FormatStyle.PLAIN, Mode.TRANSCRIBE],
+    );
+  } catch (error: any) {
+    // 42P01 = undefined_table
+    // 42704 = undefined_object (can be enum types)
+    if (
+      !isDbInitialized &&
+      (error.code === '42P01' || error.code === '42704')
+    ) {
+      isDbInitialized = true;
+      await setupDatabase();
+      await getChatInfo(client, chatId);
+      return;
+    }
+
     throw error;
   }
 }

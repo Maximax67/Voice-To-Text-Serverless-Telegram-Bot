@@ -3,7 +3,7 @@ import { Markup } from 'telegraf';
 import { LANGUAGE_CODES } from '../constants';
 import { Mode } from '../enums';
 import { getClient } from '../core';
-import { formatDate } from './formate_date';
+import { formatDateTime } from './formate_datetime';
 import { getChatInfo } from './get_chat_info';
 
 import type { Context } from 'telegraf';
@@ -27,15 +27,17 @@ export async function showSettingsMenu(ctx: Context, isEdit: boolean = false) {
     mode = 'Translate';
   }
 
-  const createdAtFormatted = formatDate(chatInfo.created_at);
-  const editedAtFormatted = formatDate(chatInfo.edited_at);
+  const createdAtFormatted = formatDateTime(chatInfo.created_at);
+  const editedAtFormatted = formatDateTime(chatInfo.edited_at);
+  const createdAtLabel =
+    ctx.chat!.type === 'private' ? 'First started' : 'First added to group';
 
   const text =
-    `<b>Chat id:</b> <code>${chatId}</code>${chatInfo.banned_timestamp ? '\n<b>Banned:</b> ' + formatDate(chatInfo.banned_timestamp) : ''}\n\n` +
+    `<b>Chat id:</b> <code>${chatId}</code>${chatInfo.banned_timestamp ? '\n<b>Banned:</b> ' + formatDateTime(chatInfo.banned_timestamp) : ''}\n\n` +
     `<b>Chat language:</b> ${language}\n` +
     `<b>Format style:</b> ${formatStyle[0].toUpperCase() + formatStyle.slice(1).replace('_', ' ')}\n` +
     `<b>Mode:</b> ${mode}\n\n` +
-    `<b>Bot added to group:</b> ${createdAtFormatted}\n` +
+    `<b>${createdAtLabel}:</b> ${createdAtFormatted}\n` +
     `<b>Last settings edit:</b> ${editedAtFormatted}`;
 
   const keyboard = Markup.inlineKeyboard([

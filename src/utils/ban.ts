@@ -1,4 +1,4 @@
-import { formatDate } from './formate_date';
+import { formatDateTime } from './formate_datetime';
 import { isGlobalAdmin } from './is_admin';
 import { getClient, redis } from '../core';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
@@ -39,7 +39,7 @@ export async function ban(ctx: Context) {
 
   if (banned_timestamp) {
     await ctx.reply(
-      `Chat ${chatId} has been banned at ${formatDate(banned_timestamp)}.`,
+      `Chat ${chatId} has been banned at ${formatDateTime(banned_timestamp)}.`,
     );
     try {
       await ctx.telegram.sendMessage(chatId, 'This chat was banned!');
@@ -108,7 +108,7 @@ export async function banList(ctx: Context) {
 
   const records = res.rows.map(
     (row) =>
-      `<code>${row.chat_id}</code> - ${formatDate(row.banned_timestamp)}`,
+      `<code>${row.chat_id}</code> - ${formatDateTime(row.banned_timestamp)}`,
   );
 
   const messages: string[] = [];
