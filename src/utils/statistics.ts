@@ -154,12 +154,11 @@ export async function showChatStatistics(ctx: Context): Promise<void> {
 
   let avgPerDay = 'n/a';
   const usageCountNumber = +stats.usage_count;
-  if (stats.first_usage && stats.last_usage && usageCountNumber > 0) {
+  if (stats.first_usage && usageCountNumber > 0) {
     const first = new Date(stats.first_usage);
-    const last = new Date(stats.last_usage);
     const days = Math.max(
       1,
-      Math.ceil((last.getTime() - first.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+      Math.ceil((Date.now() - first.getTime()) / (1000 * 60 * 60 * 24)) + 1,
     );
     avgPerDay = (usageCountNumber / days).toFixed(2);
   }
@@ -309,12 +308,11 @@ export async function showGlobalStatistics(ctx: Context): Promise<void> {
 
   let avgPerDay = 'n/a';
   const usageCountNumber = +stats.usage_count;
-  if (stats.first_usage && stats.last_usage && usageCountNumber > 0) {
+  if (stats.first_usage && usageCountNumber > 0) {
     const first = new Date(stats.first_usage);
-    const last = new Date(stats.last_usage);
     const days = Math.max(
       1,
-      Math.ceil((last.getTime() - first.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+      Math.ceil((Date.now() - first.getTime()) / (1000 * 60 * 60 * 24)) + 1,
     );
     avgPerDay = (usageCountNumber / days).toFixed(2);
   }
