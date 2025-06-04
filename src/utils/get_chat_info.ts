@@ -13,7 +13,7 @@ export async function getChatInfo(
 ): Promise<ChatInfo> {
   try {
     const result = await client.query<ChatInfo>(
-      `SELECT * FROM chats WHERE chat_id = $1;`,
+      'SELECT * FROM chats WHERE chat_id = $1;',
       [chatId],
     );
 

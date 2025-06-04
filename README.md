@@ -63,28 +63,31 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **GLOBAL_REQUESTS_WINDOW**: Time window for global rate limiting. Default is 1 hour (3600 seconds).
 - **ADMIN_CHAT_ID**: Admin chat id for logs. Logging disabled if not set or set to 0.
 - **ADMIN_MESSAGE_THREAD_ID**: Admin thread id for logs (if supergroup).
-- **ADMINS_IDS**: List of admins separated by comma ids for ban and unban features.
+- **ADMINS_IDS**: List of admins separated by comma ids for ban, unban, logs, chat list and statistics features.
 - **UTC_OFFSET**: Sets the time difference from UTC in hours. Use a positive number for time zones ahead of UTC (e.g. `2` for UTC+2), and a negative number for those behind (e.g. `-5` for UTC-5).
 
 ## Commands
 
-Public commands:
+### Public Commands
 
-- **/start**: Provides a welcome message and lists bot usage limits.
-- **/transcribe**: Responds to a voice message to convert it into text. Simply reply to an audio message.
-- **/translate**: Translate the replied-to message to English.
-- **/settings**: Open the settings menu (chat admins only).
-- **/stats**: Show chat statistics.
+* **`/start`** – Displays a welcome message and lists the bot usage limits.
+* **`/transcribe`** – Transcribes a voice message to text. Use by replying to an audio message.
+* **`/translate`** – Translates the replied-to message into English.
+* **`/settings`** – Opens the settings menu (available to chat admins only).
+* **`/stats`** – Shows statistics for the current chat.
 
-Commands only for admins set in `ADMINS_IDS` env variable:
+### Admin-Only Commands (`ADMINS_IDS` environment variable)
 
-- **/ban {chatId}**: Ban chat.
-- **/unban {chatId}**: Unban chat.
-- **/ban_list**: Show banned chats.
-- **/disable_logging {chatId}**: Disable logging.
-- **/enable_logging {chatId}**: Enable logging.
-- **/chat_list**: Get list of chats where bot was used.
-- **/logs {chatId}**: Get request logs for chat.
+* **`/ban {chatId}`** – Bans the specified chat.
+* **`/unban {chatId}`** – Unbans the specified chat.
+* **`/ban_list`** – Lists all banned chats.
+* **`/disable_logging {chatId}`** – Disables logging for the specified chat.
+* **`/enable_logging {chatId}`** – Enables logging for the specified chat.
+* **`/chat_list`** – Retrieves a list of chats where the bot has been used.
+* **`/logs [chatId]`** – Retrieves request logs in CSV format for the specified chat, or for all chats if no `chatId` is provided.
+* **`/logs_json [chatId]`** – Retrieves request logs in JSON format for the specified chat, or for all chats if no `chatId` is provided.
+* **`/stats {chatId}`** – Retrieves statistics for the specified chat.
+* **`/global_stats`** – Retrieves global usage statistics.
 
 ## Supported Audio Formats
 

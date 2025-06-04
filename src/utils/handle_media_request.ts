@@ -200,7 +200,7 @@ export async function handleMediaRequest(
 
     const errorMessage = String(error);
     const formatAdminMessage = (message: string) =>
-      `Error processing media: <code>${errorMessage}</code>. ${message}`;
+      `Error processing media: ${errorMessage}. ${message}`;
 
     if (isTranscriptionSent) {
       if (requestInfo.response) {

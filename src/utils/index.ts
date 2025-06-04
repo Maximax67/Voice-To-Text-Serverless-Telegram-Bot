@@ -14,5 +14,6 @@ export * from './logging';
 export * from './migrate_chat';
 export * from './send_text';
 export * from './show_settings_menu';
+export * from './statistics';
 export * from './throttler';
 export * from './transcribe_file';
