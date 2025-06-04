@@ -251,7 +251,8 @@ export async function showGlobalStatistics(ctx: Context): Promise<void> {
   const formatLines =
     Array.isArray(chatAgg.format_styles) && chatAgg.format_styles.length
       ? chatAgg.format_styles.map(
-          (row) => `- ${row.format_style}: ${row.count}`,
+          (row) =>
+            `- ${row.format_style[0].toUpperCase()}${row.format_style.slice(1).replace('_', ' ')}: ${row.count}`,
         )
       : ['- none'];
 
