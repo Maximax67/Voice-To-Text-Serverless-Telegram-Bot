@@ -4,11 +4,8 @@ import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID } from '../config';
 import { getClient } from '../core';
 import { isGlobalAdmin } from './is_admin';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
-import { formatDateTime } from './format_datetime';
-import { getChatInfo, getChatName } from './get_chat_info';
-import { LANGUAGE_CODES, MAX_TELEGRAM_MESSAGE_LENGTH } from '../constants';
+import { getChatName } from './get_chat_info';
 import { escapeHTML } from './escape_html';
-import { formatBytesToString } from './format_bytes_to_string';
 
 import type { Client, QueryResult } from 'pg';
 import type { Context } from 'telegraf';
@@ -220,78 +217,6 @@ export async function disableLogging(ctx: Context): Promise<void> {
   });
 }
 
-export async function chatList(ctx: Context): Promise<void> {
-  const userId = ctx.from?.id;
-  if (!userId || !isGlobalAdmin(userId)) return;
-
-  const client = await getClient();
-  const res = await client.query(`
-    SELECT
-      c.chat_id,
-      c.banned_timestamp,
-      c.logging_enabled,
-      c.created_at,
-      MAX(r.timestamp) AS last_usage,
-      COUNT(r.id) AS usage_count
-    FROM chats c
-    LEFT JOIN media_requests r ON c.chat_id = r.chat_id
-    GROUP BY c.chat_id, c.banned_timestamp, c.logging_enabled, c.created_at
-    ORDER BY last_usage DESC NULLS LAST, c.created_at DESC;
-  `);
-
-  if (res.rowCount === 0) {
-    await ctx.reply('No chats found!');
-    return;
-  }
-
-  const lines = await Promise.all(
-    res.rows.map(async (row) => {
-      const loggingIcon = row.logging_enabled ? '📝' : '🔏';
-      const lastUsage = row.last_usage
-        ? formatDateTime(row.last_usage)
-        : 'never';
-      const createdAt = formatDateTime(row.created_at);
-      const bannedIcon = row.banned_timestamp ? '🚫' : '✔️';
-      const chatName = await getChatName(ctx, row.chat_id);
-
-      let result = `${bannedIcon} ${loggingIcon} <code>`;
-      if (chatName) {
-        result += `${escapeHTML(chatName)}</code>\nId: <code>${row.chat_id}</code>\n`;
-      } else {
-        result += `${row.chat_id}</code>\n`;
-      }
-
-      return (
-        result +
-        `Requests: ${row.usage_count}\n` +
-        `Last usage: ${lastUsage}\n` +
-        `Joined on: ${createdAt}\n`
-      );
-    }),
-  );
-
-  const messages: string[] = [];
-  let currentMessage = '';
-
-  for (const line of lines) {
-    const joinedMessage = currentMessage + '\n' + line;
-    if (joinedMessage.length > MAX_TELEGRAM_MESSAGE_LENGTH) {
-      messages.push(currentMessage);
-      currentMessage = line;
-    } else {
-      currentMessage = joinedMessage;
-    }
-  }
-
-  if (currentMessage) {
-    messages.push(currentMessage);
-  }
-
-  for (const message of messages) {
-    await ctx.reply(message, { parse_mode: 'HTML' });
-  }
-}
-
 export async function getLogs(ctx: Context, isCsv: boolean): Promise<void> {
   const userId = ctx.from?.id;
   if (!userId || !isGlobalAdmin(userId)) return;
@@ -398,4 +323,58 @@ export async function getLogs(ctx: Context, isCsv: boolean): Promise<void> {
       parse_mode: 'HTML',
     },
   );
+}
+
+export async function deleteLogs(ctx: Context): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId || !isGlobalAdmin(userId)) return;
+
+  const chatId = getChatIdFromCommand(ctx);
+  if (!chatId) {
+    await ctx.reply('Usage: /delete_logs {chatId}');
+    return;
+  }
+
+  const client = await getClient();
+  const chatRes = await client.query<ChatInfo>(
+    'SELECT chat_id FROM chats WHERE chat_id = $1;',
+    [chatId],
+  );
+
+  if (chatRes.rowCount === 0) {
+    await ctx.reply('Chat not found.');
+    return;
+  }
+
+  const delRes = await client.query(
+    'DELETE FROM media_requests WHERE chat_id = $1;',
+    [chatId],
+  );
+
+  if (delRes.rowCount === 0) {
+    await ctx.reply(`No logs found for chat <code>${chatId}</code>.`, {
+      parse_mode: 'HTML',
+    });
+  } else {
+    const plural = delRes.rowCount === 1 ? '' : 's';
+    await ctx.reply(
+      `Deleted ${delRes.rowCount} log${plural} for chat <code>${chatId}</code>.`,
+      { parse_mode: 'HTML' },
+    );
+  }
+}
+
+export async function deleteAllLogs(ctx: Context): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId || !isGlobalAdmin(userId)) return;
+
+  const client = await getClient();
+  const delRes = await client.query('DELETE FROM media_requests;');
+
+  if (delRes.rowCount === 0) {
+    await ctx.reply('No logs found for any chats.');
+  } else {
+    const plural = delRes.rowCount === 1 ? '' : 's';
+    await ctx.reply(`Deleted ${delRes.rowCount} log${plural} for all chats!`);
+  }
 }

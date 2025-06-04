@@ -5,11 +5,90 @@ import { formatDateTime } from './format_datetime';
 import { getChatName } from './get_chat_info';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
 import { isGlobalAdmin } from './is_admin';
-import { LANGUAGE_CODES } from '../constants';
+import { LANGUAGE_CODES, MAX_TELEGRAM_MESSAGE_LENGTH } from '../constants';
 import { Mode } from '../enums';
 
 import type { Context } from 'telegraf';
 import type { ChatInfo } from '../types';
+
+export async function chatList(
+  ctx: Context,
+  orderByUsageCount: boolean = false,
+): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId || !isGlobalAdmin(userId)) return;
+
+  const orderByRule = orderByUsageCount
+    ? 'usage_count DESC'
+    : 'last_usage DESC NULLS LAST';
+
+  const client = await getClient();
+  const res = await client.query(`
+    SELECT
+      c.chat_id,
+      c.banned_timestamp,
+      c.logging_enabled,
+      c.created_at,
+      MAX(r.timestamp) AS last_usage,
+      COUNT(r.id) AS usage_count
+    FROM chats c
+    LEFT JOIN media_requests r ON c.chat_id = r.chat_id
+    GROUP BY c.chat_id, c.banned_timestamp, c.logging_enabled, c.created_at
+    ORDER BY ${orderByRule}, c.created_at DESC;
+  `);
+
+  if (res.rowCount === 0) {
+    await ctx.reply('No chats found!');
+    return;
+  }
+
+  const lines = await Promise.all(
+    res.rows.map(async (row) => {
+      const loggingIcon = row.logging_enabled ? '📝' : '🔏';
+      const lastUsage = row.last_usage
+        ? formatDateTime(row.last_usage)
+        : 'never';
+      const createdAt = formatDateTime(row.created_at);
+      const bannedIcon = row.banned_timestamp ? '🚫' : '✔️';
+      const chatName = await getChatName(ctx, row.chat_id);
+
+      let result = `${bannedIcon} ${loggingIcon} <code>`;
+      if (chatName) {
+        result += `${escapeHTML(chatName)}</code>\nId: <code>${row.chat_id}</code>\n`;
+      } else {
+        result += `${row.chat_id}</code>\n`;
+      }
+
+      return (
+        result +
+        `Requests: ${row.usage_count}\n` +
+        `Last usage: ${lastUsage}\n` +
+        `Joined on: ${createdAt}\n`
+      );
+    }),
+  );
+
+  const messages: string[] = [];
+  let currentMessage = '';
+
+  for (const line of lines) {
+    const joinedMessage = currentMessage + '\n' + line;
+    if (joinedMessage.length > MAX_TELEGRAM_MESSAGE_LENGTH) {
+      messages.push(currentMessage);
+      currentMessage = line;
+    } else {
+      currentMessage = joinedMessage;
+    }
+  }
+
+  if (currentMessage) {
+    messages.push(currentMessage);
+  }
+
+  for (const message of messages) {
+    await ctx.reply(message, { parse_mode: 'HTML' });
+  }
+}
 
 export async function showChatStatistics(ctx: Context): Promise<void> {
   const isAdmin = isGlobalAdmin(ctx.from!.id);

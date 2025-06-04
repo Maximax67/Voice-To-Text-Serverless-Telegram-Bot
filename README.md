@@ -70,24 +70,27 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 
 ### Public Commands
 
-* **`/start`** – Displays a welcome message and lists the bot usage limits.
-* **`/transcribe`** – Transcribes a voice message to text. Use by replying to an audio message.
-* **`/translate`** – Translates the replied-to message into English.
-* **`/settings`** – Opens the settings menu (available to chat admins only).
-* **`/stats`** – Shows statistics for the current chat.
+- **`/start`** – Displays a welcome message and lists the bot usage limits.
+- **`/transcribe`** – Transcribes a voice message to text. Use by replying to an audio message.
+- **`/translate`** – Translates the replied-to message into English.
+- **`/settings`** – Opens the settings menu (available to chat admins only).
+- **`/stats`** – Shows statistics for the current chat.
 
 ### Admin-Only Commands (`ADMINS_IDS` environment variable)
 
-* **`/ban {chatId}`** – Bans the specified chat.
-* **`/unban {chatId}`** – Unbans the specified chat.
-* **`/ban_list`** – Lists all banned chats.
-* **`/disable_logging {chatId}`** – Disables logging for the specified chat.
-* **`/enable_logging {chatId}`** – Enables logging for the specified chat.
-* **`/chat_list`** – Retrieves a list of chats where the bot has been used.
-* **`/logs [chatId]`** – Retrieves request logs in CSV format for the specified chat, or for all chats if no `chatId` is provided.
-* **`/logs_json [chatId]`** – Retrieves request logs in JSON format for the specified chat, or for all chats if no `chatId` is provided.
-* **`/stats {chatId}`** – Retrieves statistics for the specified chat.
-* **`/global_stats`** – Retrieves global usage statistics.
+- **`/ban {chatId}`** – Bans the specified chat.
+- **`/unban {chatId}`** – Unbans the specified chat.
+- **`/ban_list`** – Lists all banned chats.
+- **`/disable_logging {chatId}`** – Disables logging for the specified chat.
+- **`/enable_logging {chatId}`** – Enables logging for the specified chat.
+- **`/logs [chatId]`** – Retrieves request logs in CSV format for the specified chat, or for all chats if no `chatId` is provided.
+- **`/logs_json [chatId]`** – Retrieves request logs in JSON format for the specified chat, or for all chats if no `chatId` is provided.
+- **`/delete_logs {chatId}`** – Deletes all logs for the specified chat.
+- **`/delete_all_logs`** – Deletes all logs for all chats.
+- **`/chat_list`** – Retrieves a list of chats where the bot has been used sorted by last usage time.
+- **`/chat_list_by_requests`** – Retrieves a list of chats where the bot has been used sorted by usage count.
+- **`/stats {chatId}`** – Retrieves statistics for the specified chat.
+- **`/global_stats`** – Retrieves global usage statistics.
 
 ## Supported Audio Formats
 

@@ -31,6 +31,8 @@ import {
   joinChat,
   logUnknownError,
   migrateChatMiddleware,
+  deleteAllLogs,
+  deleteLogs,
   showSettingsMenu,
   throttleTelegramApi,
   unban,
@@ -89,11 +91,19 @@ telegramBot.command('ban_list', banList);
 
 telegramBot.command('disable_logging', disableLogging);
 telegramBot.command('enable_logging', enableLogging);
-telegramBot.command('chat_list', chatList);
 telegramBot.command('logs', async (ctx) => getLogs(ctx, true));
 telegramBot.command('logs_json', async (ctx) => getLogs(ctx, false));
+
+telegramBot.command('chat_list', async (ctx) => chatList(ctx, false));
+telegramBot.command('chat_list_by_requests', async (ctx) =>
+  chatList(ctx, true),
+);
+
 telegramBot.command('stats', showChatStatistics);
 telegramBot.command('global_stats', showGlobalStatistics);
+
+telegramBot.command('delete_logs', deleteLogs);
+telegramBot.command('delete_all_logs', deleteAllLogs);
 
 telegramBot.on(message('audio'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.audio, MediaType.AUDIO),
