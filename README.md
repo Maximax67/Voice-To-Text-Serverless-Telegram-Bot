@@ -1,5 +1,9 @@
 # Voice to Text Serverless Telegram Bot
 
+[![GitHub License](https://img.shields.io/github/license/Maximax67/Voice-To-Text-Serverless-Telegram-Bot)](LICENSE)
+[![Vercel Deploy](https://deploy-badge.vercel.app/vercel/voice-to-text-serverless-telegram-bot)](https://voice-to-text-serverless-telegram-bot.vercel.app/)
+[![Telegram bot](https://img.shields.io/badge/Telegram-2CA5E0?&logo=telegram&logoColor=white&label=@voice_to_text_tg_bot)](https://t.me/voice_to_text_tg_bot)
+
 This Telegram bot converts voice messages into text. It can be used in private chats or added to groups, where it will automatically transcribe audio messages into text. Additionally, you can use the `/transcribe` command to convert any audio message into text by replying to the message.
 
 ## Prerequisites
