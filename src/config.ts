@@ -4,6 +4,9 @@ export const ENVIRONMENT = process.env.NODE_ENV || '';
 export const VERCEL_URL = process.env.VERCEL_URL || '';
 export const BOT_TOKEN = process.env.BOT_TOKEN || '';
 
+export const SETUP_SECRET_TOKEN = process.env.SETUP_SECRET_TOKEN;
+export const TELEGRAM_SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN;
+
 export const KV_REST_API_URL = process.env.KV_REST_API_URL;
 export const KV_REST_API_TOKEN = process.env.KV_REST_API_TOKEN;
 

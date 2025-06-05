@@ -17,6 +17,8 @@ You can fork this project and make the necessary changes you need. Once you're d
 
 Reference to [this update](https://vercel.com/docs/security/deployment-protection#migrating-to-standard-protection), you need to turn off Vercel Authentication, under Settings => Deployment Protection.
 
+To set up the Telegram webhook, make a request to: `https://your-app.vercel.app/api/setup?token=your-secret-token` where `your-secret-token` corresponds to the `SETUP_SECRET_TOKEN` environment variable.
+
 ## Connecting to Vercel PostgreSQL
 
 To use PostgreSQL with your bot via Vercel Postgres:
@@ -65,6 +67,13 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **ADMIN_MESSAGE_THREAD_ID**: Admin thread id for logs (if supergroup).
 - **ADMINS_IDS**: List of admins separated by comma ids for ban, unban, logs, chat list and statistics features.
 - **UTC_OFFSET**: Sets the time difference from UTC in hours. Use a positive number for time zones ahead of UTC (e.g. `2` for UTC+2), and a negative number for those behind (e.g. `-5` for UTC-5).
+- **SETUP_SECRET_TOKEN**: A secret token used to secure an HTTP route /api/setup that sets the webhook when accessed with this token. After deployment, you can trigger the webhook setup by hitting:
+
+  ```bash
+  curl "https://your-app.vercel.app/api/setup?token=your-secret-token"
+  ```
+
+- **TELEGRAM_SECRET_TOKEN**: A secret token to protect your Telegram webhook from unauthorized requests. It ensures that only Telegram can send updates to your bot, adding an extra layer of security.
 
 ## Commands
 
