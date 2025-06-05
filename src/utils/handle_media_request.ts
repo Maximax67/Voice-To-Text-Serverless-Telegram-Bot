@@ -1,4 +1,5 @@
 import {
+  BOT_TOKEN,
   MAX_DURATION,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_FORMATTED,
@@ -58,14 +59,39 @@ export async function handleMediaRequest(
   const fileSize = media.file_size!;
   const duration = media.duration;
 
-  const fileLink = await ctx.telegram.getFileLink(fileId);
+  const errors: string[] = [];
+  if (MAX_FILE_SIZE && fileSize && fileSize > MAX_FILE_SIZE) {
+    errors.push(`File is too big. Limit: ${MAX_FILE_SIZE_FORMATTED}!`);
+  }
 
-  let filename =
-    'file_name' in media && media.file_name
-      ? media.file_name
-      : fileLink.pathname.split(/[\\/]/).pop()!;
+  let filename: string = '';
+  let downloadUrl: string | null = null;
+  if (!errors.length) {
+    try {
+      const file = await ctx.telegram.getFile(fileId);
+      const filePath = file.file_path;
+      const fileSize = file.file_size;
 
-  const fileExtension = filename.split('.').pop()!.toLowerCase();
+      downloadUrl = filePath
+        ? `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`
+        : null;
+
+      filename =
+        'file_name' in media && media.file_name
+          ? media.file_name
+          : filePath?.split(/[\\/]/).pop() || '';
+
+      if (MAX_FILE_SIZE && fileSize && fileSize > MAX_FILE_SIZE) {
+        errors.push(`File is too big. Limit: ${MAX_FILE_SIZE_FORMATTED}!`);
+      }
+    } catch {}
+  }
+
+  if (!filename) {
+    filename = 'file_name' in media && media.file_name ? media.file_name : '';
+  }
+
+  const fileExtension = filename.split('.').pop()!.toLowerCase() || null;
 
   const message = isReply
     ? ((ctx.message as any).reply_to_message as Message)
@@ -106,17 +132,16 @@ export async function handleMediaRequest(
     }
   }
 
-  const errors: string[] = [];
-  if (MAX_FILE_SIZE && fileSize && fileSize > MAX_FILE_SIZE) {
-    errors.push(`File is too large. Limit: ${MAX_FILE_SIZE_FORMATTED}!`);
-  }
-
   if (MAX_DURATION && duration && duration > MAX_DURATION) {
     errors.push(`Audio too long. Limit: ${MAX_DURATION} seconds!`);
   }
 
-  if (!SUPPORTED_FILE_EXTENSIONS.has(fileExtension)) {
+  if (!fileExtension || !SUPPORTED_FILE_EXTENSIONS.has(fileExtension)) {
     errors.push(`Media format not supported: ${fileExtension}!`);
+  }
+
+  if (!downloadUrl && !errors.length) {
+    errors.push('Can not download the requested file!');
   }
 
   if (errors.length) {
@@ -146,7 +171,7 @@ export async function handleMediaRequest(
 
   try {
     const mediaDownloadStart = Date.now();
-    const fileResponse = await fetch(fileLink);
+    const fileResponse = await fetch(downloadUrl!);
     if (!fileResponse.ok) {
       throw new Error('Failed to fetch file from Telegram!');
     }

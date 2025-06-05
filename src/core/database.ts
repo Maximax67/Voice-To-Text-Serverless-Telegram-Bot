@@ -76,7 +76,7 @@ export async function setupDatabase() {
       media_type media_type_enum NOT NULL,
       logged_message_id INT,
       file_id TEXT NOT NULL,
-      file_type TEXT NOT NULL,
+      file_type TEXT,
       file_size INT NOT NULL,
       duration INT NOT NULL,
       response TEXT,

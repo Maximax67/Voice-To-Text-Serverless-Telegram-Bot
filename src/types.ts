@@ -29,7 +29,7 @@ export interface RequestInfo {
   media_type: MediaType;
   logged_message_id: number | null;
   file_id: string;
-  file_type: string;
+  file_type: string | null;
   file_size: number;
   duration: number;
   response: string | null;
