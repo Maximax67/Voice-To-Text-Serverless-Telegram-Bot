@@ -4,36 +4,83 @@
 [![Vercel Deploy](https://deploy-badge.vercel.app/vercel/voice-to-text-serverless-telegram-bot)](https://voice-to-text-serverless-telegram-bot.vercel.app/)
 [![Telegram bot](https://img.shields.io/badge/Telegram-2CA5E0?&logo=telegram&logoColor=white&label=@voice_to_text_tg_bot)](https://t.me/voice_to_text_tg_bot)
 
-This Telegram bot converts voice messages into text. It can be used in private chats or added to groups, where it will automatically transcribe audio messages into text. Additionally, you can use the `/transcribe` command to convert any audio message into text by replying to the message.
+This Telegram bot converts voice messages into text. It can be used in private chats or added to groups, where it will automatically transcribe audio messages into text. Additionally, you can use the `/transcribe` and `/translate` commands to convert any audio message into text by replying to the message. Translate mode converts audio from any language into English text only.
 
-## Prerequisites
+## Demo
 
-Before running this bot, ensure you have the following:
+Experience the bot in action on Telegram: [@voice_to_text_tg_bot](https://t.me/voice_to_text_tg_bot).
+
+You can try it in three simple ways:
+
+- **Private Chat**: Send any voice message directly to the bot, and it will instantly reply with the transcribed text.
+- **Group Chat**: Add the bot to your group, and it will automatically convert incoming voice messages to text for everyone to read.
+- **On-Demand Transcription**: Reply to any audio message with the `/transcribe` or `/translate` command to get the text version.
+
+For the most accurate transcription and translation, it's recommended to set the chat language using the bot's settings.
+
+## Supported languages
+
+This bot supports transcription in **51 languages**, powered by OpenAI’s **Whisper-large-v3 model** — one of the most advanced speech recognition models available.
+
+**Supported languages**: Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian, Bosnian, Bulgarian, Catalan, Chinese, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, Galician, German, Greek, Hebrew, Hindi, Hungarian, Icelandic, Indonesian, Italian, Japanese, Kannada, Kazakh, Korean, Latvian, Lithuanian, Macedonian, Malay, Marathi, Maori, Nepali, Norwegian, Persian, Polish, Portuguese, Romanian, Russian, Serbian, Slovak, Slovenian, Spanish, Swahili, Swedish, Tagalog, Tamil, Thai, Turkish, Ukrainian, Urdu, Vietnamese, and Welsh.
+
+## Supported Audio Formats
+
+The bot supports the following audio file formats: `.flac`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.m4a`, `.ogg`, `.oga`, `.wav`, `.webm`
+
+## Self-hosting
+
+### Free limits
+
+#### Audio Processing – Groq API
+
+[Groq](https://groq.com/) currently provides access to the following **speech-to-text models for free**:
+
+- `whisper-large-v3`
+- `whisper-large-v3-turbo`
+- `distil-whisper-large-v3-en`
+
+Free usage limits for all models:
+
+- 20 requests per minute
+- 7,200 audio seconds per hour
+- 28,800 audio seconds per day
+
+**Note**: Only `whisper-large-v3` supports translation to English at this time.
+
+#### Hosting and PostgreSQL database – Vercel
+
+The bot is hosted using [Vercel](https://vercel.com/) under their **free Hobby plan**.
+You can learn more about usage limits and features on the [Vercel pricing page](https://vercel.com/pricing).
+
+#### Redis – Upstash
+
+[Upstash](https://upstash.com/) provides a **serverless Redis database** with a generous free tier: up to **500,000 Redis commands per month**.
+
+Full details are available on their [pricing page](https://upstash.com/pricing).
+
+### Prerequisites
+
+Before hosting this bot, ensure you have the following:
 
 - A Telegram bot token (you can create one via [BotFather](https://core.telegram.org/bots#botfather)).
-- A GROQ API key for audio transcription.
+- A free [Groq](https://groq.com/) API key for audio transcription.
 - Vercel free account for deploy.
-- Upstash free account for Redis instance (for rate limiting).
+- Upstash free account for Redis instance (rate limiting).
 
-## Production
+### Deploying to Vercel
 
 You can fork this project and make the necessary changes you need. Once you're done with your changes, simply go to Vercel's Git import.
 
 Reference to [this update](https://vercel.com/docs/security/deployment-protection#migrating-to-standard-protection), you need to turn off Vercel Authentication, under Settings => Deployment Protection.
 
-To set up the Telegram webhook, make a request to: `https://your-app.vercel.app/api/setup?token=your-secret-token` where `your-secret-token` corresponds to the `SETUP_SECRET_TOKEN` environment variable.
-
-## Connecting to Vercel PostgreSQL
+### Connecting to Vercel PostgreSQL
 
 To use PostgreSQL with your bot via Vercel Postgres:
 
 1. Go to Vercel Postgres and create a new database.
 2. Once created, copy the connection string (e.g., `postgres://username:password@host:port/database`).
 3. Add it as `DATABASE_URL` in your environment variables.
-
-## Upstash Redis for Rate Limiting
-
-To implement rate limiting for both individual users and globally across all users, this bot uses Upstash, a serverless Redis solution.
 
 ### Steps to set up Upstash with Vercel
 
@@ -48,7 +95,7 @@ To implement rate limiting for both individual users and globally across all use
 
 The Redis instance is used for storing rate-limiting data for both individual users and globally, ensuring efficient control over the number of requests.
 
-## Configuration
+### Configuration
 
 Set up the `.env` file according to `.env.example` or directly configure these values in Vercel's environment variables:
 
@@ -79,7 +126,21 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 
 - **TELEGRAM_SECRET_TOKEN**: A secret token to protect your Telegram webhook from unauthorized requests. It ensures that only Telegram can send updates to your bot, adding an extra layer of security.
 
-## Commands
+### Setting up the Telegram webhook
+
+To set up the Telegram webhook, simply make a **single request** to the following URL:
+
+```
+https://your-app.vercel.app/api/setup?token=your-secret-token
+```
+
+Replace:
+- `your-app` with your actual Vercel app name.
+- `your-secret-token` with the value of your `SETUP_SECRET_TOKEN` environment variable.
+
+**Note**: This setup only needs to be done **once** after deployment.
+
+## Bot Commands
 
 ### Public Commands
 
@@ -104,10 +165,6 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **`/chat_list_by_requests`** – Retrieves a list of chats where the bot has been used sorted by usage count.
 - **`/stats {chatId}`** – Retrieves statistics for the specified chat.
 - **`/global_stats`** – Retrieves global usage statistics.
-
-## Supported Audio Formats
-
-The bot supports the following audio file formats: `.flac`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.m4a`, `.ogg`, `.oga`, `.wav`, `.webm`
 
 ## License
 
