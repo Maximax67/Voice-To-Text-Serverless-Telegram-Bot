@@ -17,7 +17,7 @@
     "bottleneck": "^2.19.5",
     "dotenv-cli": "^8.0.0",
     "form-data": "^4.0.2",
-    "pg": "^8.10.0",
+    "pg": "~8.10.0",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
