@@ -110,9 +110,9 @@ Make sure your server is accessible from the public internet and supports HTTPS 
    The bot will listen for Telegram webhook events at `http://your-domain.com/api`.
 
 5. **Set up the webhook**  
-   Trigger the `/setup` route to register your webhook with Telegram:
+   Trigger the `/api/setup` route to register your webhook with Telegram:
    ```
-   curl "http://your-domain.com/setup?token=your-secret-token"
+   curl "http://your-domain.com/api/setup?token=your-secret-token"
    ```
    Replace `your-domain.com` and `your-secret-token` with your actual values.
 
