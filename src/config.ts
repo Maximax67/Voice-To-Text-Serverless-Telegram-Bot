@@ -17,6 +17,10 @@ export const GROQ_TRANSLATE_MODEL =
 
 export const DATABASE_URL = process.env.DATABASE_URL || '';
 
+export const IS_VERCEL = process.env.IS_VERCEL !== '0';
+export const SERVER_URL = process.env.SERVER_URL;
+export const PORT = parseInt(process.env.PORT || '80', 10);
+
 export const MAX_FILE_SIZE = parseInt(
   process.env.MAX_FILE_SIZE || '10485760',
   10,

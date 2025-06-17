@@ -35,9 +35,9 @@ async function setWebhook(botToken: string, url: string, secretToken?: string) {
 }
 
 export default async function handle(req: VercelRequest, res: VercelResponse) {
-  const VERCEL_URL = process.env.VERCEL_URL;
-  if (!VERCEL_URL) {
-    return res.status(500).json({ error: 'VERCEL_URL is not set' });
+  const SERVER_URL = process.env.VERCEL_URL || process.env.SERVER_URL;
+  if (!SERVER_URL) {
+    return res.status(500).json({ error: 'SERVER_URL is not set' });
   }
 
   const SETUP_SECRET_TOKEN = process.env.SETUP_SECRET_TOKEN;
@@ -47,7 +47,7 @@ export default async function handle(req: VercelRequest, res: VercelResponse) {
 
   try {
     const botToken = process.env.BOT_TOKEN!;
-    const webhookUrl = `${VERCEL_URL}/api`;
+    const webhookUrl = `${SERVER_URL}/api`;
     const secretToken = process.env.TELEGRAM_SECRET_TOKEN;
 
     await deleteWebhook(botToken);

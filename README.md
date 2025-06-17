@@ -26,7 +26,7 @@ This bot supports transcription in **51 languages**, powered by OpenAI’s **Whi
 
 ## Supported Audio Formats
 
-The bot supports the following audio file formats: `.flac`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.m4a`, `.ogg`, `.oga`, `.wav`, `.webm`
+The bot supports the following audio file formats: `.flac`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.m4a`, `.ogg`, `.oga`, `.wav`, `.webm`.
 
 ## Self-hosting
 
@@ -74,15 +74,53 @@ You can fork this project and make the necessary changes you need. Once you're d
 
 Reference to [this update](https://vercel.com/docs/security/deployment-protection#migrating-to-standard-protection), you need to turn off Vercel Authentication, under Settings => Deployment Protection.
 
-### Connecting to Vercel PostgreSQL
+### Deploying to Other Hosting Providers
 
-To use PostgreSQL with your bot via Vercel Postgres:
+You can also deploy this bot to any other hosting provider that supports Node.js, such as **Render**, **Railway**, **Fly.io**, **AWS EC2**, **DigitalOcean**, or your own VPS.
 
-1. Go to Vercel Postgres and create a new database.
-2. Once created, copy the connection string (e.g., `postgres://username:password@host:port/database`).
-3. Add it as `DATABASE_URL` in your environment variables.
+Make sure your server is accessible from the public internet and supports HTTPS (Telegram requires HTTPS for webhooks).
 
-### Steps to set up Upstash with Vercel
+#### Steps for Non-Vercel Deployment
+
+1. **Clone the repository** and install dependencies:
+   ```bash
+   git clone https://github.com/Maximax67/Voice-To-Text-Serverless-Telegram-Bot.git
+   cd Voice-To-Text-Serverless-Telegram-Bot
+   npm install
+   npm build
+   ```
+
+2. **Set environment variables**  
+   Create a `.env` file (see `.env.example`) and set all required variables.  
+   For non-Vercel deployments, set:
+   ```
+   IS_VERCEL=0
+   SERVER_URL=https://your-domain.com
+   PORT=80
+   ```
+   Replace `https://your-domain.com` with your actual server's public URL.
+
+3. **Expose the correct port**  
+   Make sure your hosting provider allows incoming HTTP requests on the port you specify (default is 80).
+
+4. **Start the bot**  
+   ```bash
+   npm run start
+   ```
+   The bot will listen for Telegram webhook events at `http://your-domain.com/api`.
+
+5. **Set up the webhook**  
+   Trigger the `/setup` route to register your webhook with Telegram:
+   ```
+   curl "http://your-domain.com/setup?token=your-secret-token"
+   ```
+   Replace `your-domain.com` and `your-secret-token` with your actual values.
+
+### Connecting to PostgreSQL
+
+Add connection string as `DATABASE_URL` in your environment variables.
+
+### Steps to set up Upstash
 
 1. Create a free account on [Upstash](https://upstash.com/).
 2. Set up a Redis instance and get the `REST URL` and `Token` from Upstash.
