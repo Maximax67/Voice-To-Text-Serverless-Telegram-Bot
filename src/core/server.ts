@@ -73,16 +73,16 @@ export function launchServer(port: number, bot: Telegraf<Context<Update>>) {
                 console.error(err);
                 res.statusCode = 400;
                 res.end(JSON.stringify({ error: 'Invalid JSON' }));
+                return;
               }
 
-              if (fakeReq && fakeRes) {
-                try {
-                  await production(fakeReq, fakeRes, bot);
-                } catch (err) {
-                  console.error(err);
-                  res.statusCode = 500;
-                  res.end(JSON.stringify({ error: 'Internal Server Error' }));
-                }
+              try {
+                await production(fakeReq, fakeRes, bot);
+                res.end();
+              } catch (err) {
+                console.error(err);
+                res.statusCode = 500;
+                res.end(JSON.stringify({ error: 'Internal Server Error' }));
               }
 
               return;
