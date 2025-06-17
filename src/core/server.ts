@@ -23,7 +23,7 @@ export function launchServer(port: number, bot: Telegraf<Context<Update>>) {
               return;
             }
 
-            if (req.method === 'GET' && req.url.startsWith('/setup')) {
+            if (req.method === 'GET' && req.url.startsWith('/api/setup')) {
               const [_, queryString] = req.url.split('?');
               const query: Record<string, string> = {};
               if (queryString) {
@@ -70,12 +70,19 @@ export function launchServer(port: number, bot: Telegraf<Context<Update>>) {
                   },
                 } as unknown as VercelResponse;
               } catch (err) {
+                console.error(err);
                 res.statusCode = 400;
                 res.end(JSON.stringify({ error: 'Invalid JSON' }));
               }
 
               if (fakeReq && fakeRes) {
-                await production(fakeReq, fakeRes, bot);
+                try {
+                  await production(fakeReq, fakeRes, bot);
+                } catch (err) {
+                  console.error(err);
+                  res.statusCode = 500;
+                  res.end(JSON.stringify({ error: 'Internal Server Error' }));
+                }
               }
 
               return;
