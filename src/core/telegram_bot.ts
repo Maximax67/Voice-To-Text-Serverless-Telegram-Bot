@@ -40,6 +40,7 @@ import {
   showGlobalStatistics,
   searchLogs,
   getFileById,
+  who,
 } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
@@ -110,6 +111,7 @@ telegramBot.command('delete_all_logs', deleteAllLogs);
 telegramBot.command('search', async (ctx) => searchLogs(ctx, true));
 telegramBot.command('search_json', async (ctx) => searchLogs(ctx, false));
 telegramBot.command('file', getFileById);
+telegramBot.command('who', who);
 
 telegramBot.on(message('audio'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.audio, MediaType.AUDIO),

@@ -9,7 +9,12 @@ import { escapeHTML } from './escape_html';
 
 import type { Client, QueryResult } from 'pg';
 import type { Context } from 'telegraf';
-import type { Message, MessageId } from 'telegraf/typings/core/types/typegram';
+import type {
+  ChatFromGetChat,
+  Message,
+  MessageId,
+  User,
+} from 'telegraf/typings/core/types/typegram';
 import type { ChatInfo, RequestInfo } from '../types';
 import { MediaType } from '../enums';
 
@@ -623,4 +628,172 @@ export async function getFileById(ctx: Context): Promise<void> {
   await ctx.reply(
     'Unable to retrieve or forward the file for this log record.',
   );
+}
+
+async function getUserChatListWithStatuses(
+  ctx: Context,
+  userId: number,
+): Promise<{
+  chatStatuses: { chatId: number; status: string }[];
+  userInfo: User | null;
+}> {
+  const client = await getClient();
+  const res = await client.query(
+    'SELECT DISTINCT chat_id FROM media_requests WHERE user_id = $1 AND chat_id != $1 ORDER BY chat_id;',
+    [userId],
+  );
+
+  if (res.rowCount === 0) {
+    return { chatStatuses: [], userInfo: null };
+  }
+
+  const chatIds: number[] = res.rows.map((row) => row.chat_id);
+
+  let userInfo: User | null = null;
+  const chatStatuses: { chatId: number; status: string }[] = [];
+
+  for (const chatId of chatIds) {
+    const userChatInfo = await ctx.telegram.getChatMember(chatId, userId);
+    const status = userChatInfo.status;
+
+    if (!userInfo) {
+      userInfo = userChatInfo.user;
+    }
+
+    chatStatuses.push({
+      chatId,
+      status,
+    });
+  }
+
+  return {
+    chatStatuses,
+    userInfo,
+  };
+}
+
+export async function who(ctx: Context): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId || !isGlobalAdmin(userId)) return;
+
+  const chatId = getChatIdFromCommand(ctx);
+  if (!chatId) {
+    await ctx.reply('Usage: /who {user_id|chat_id}');
+    return;
+  }
+
+  let chatInfo: ChatFromGetChat | null = null;
+  try {
+    chatInfo = await ctx.telegram.getChat(chatId);
+  } catch (e) {
+    // Not found as chat/user, will try DB fallback
+  }
+
+  if (chatInfo) {
+    let msg = '';
+    if (chatInfo.type === 'private') {
+      const label =
+        chatInfo.username && chatInfo.username.endsWith('bot') ? `Bot` : `User`;
+
+      msg += `<b>${label}</b>\n`;
+      msg += `<b>ID:</b> <code>${chatInfo.id}</code>\n`;
+      if (chatInfo.first_name)
+        msg += `<b>First name:</b> <code>${escapeHTML(chatInfo.first_name)}</code>\n`;
+      if (chatInfo.last_name)
+        msg += `<b>Last name:</b> <code>${escapeHTML(chatInfo.last_name)}</code>\n`;
+      if (chatInfo.username)
+        msg += `<b>Username:</b> @${escapeHTML(chatInfo.username)}\n`;
+
+      const chatList = await getUserChatListWithStatuses(ctx, chatInfo.id);
+      if (chatList.chatStatuses.length > 0) {
+        msg += `\n<b>Used bot in chats:</b>\n`;
+        msg += (
+          await Promise.all(
+            chatList.chatStatuses.map(async (cs) => {
+              const chatName = await getChatName(ctx, cs.chatId);
+              return `<code>${cs.chatId}</code> — ${cs.status} — ${
+                chatName ? `<code>${escapeHTML(chatName)}</code>` : ''
+              }`;
+            }),
+          )
+        ).join('\n');
+      }
+
+      try {
+        const photos = await ctx.telegram.getUserProfilePhotos(
+          chatInfo.id,
+          0,
+          1,
+        );
+        if (photos.total_count > 0 && photos.photos[0][0]) {
+          await ctx.replyWithPhoto(photos.photos[0][0].file_id, {
+            caption: msg,
+            parse_mode: 'HTML',
+          });
+          return;
+        }
+      } catch (e) {
+        // ignore photo error
+      }
+      await ctx.reply(msg, { parse_mode: 'HTML' });
+      return;
+    } else {
+      msg += `<b>${chatInfo.type.charAt(0).toUpperCase() + chatInfo.type.slice(1)}</b>\n`;
+      msg += `<b>ID:</b> <code>${chatInfo.id}</code>\n`;
+      if (chatInfo.title)
+        msg += `<b>Title:</b> <code>${escapeHTML(chatInfo.title)}</code>\n`;
+      if (
+        (chatInfo.type === 'channel' || chatInfo.type === 'supergroup') &&
+        chatInfo.username
+      )
+        msg += `<b>Username:</b> @${escapeHTML(chatInfo.username)}\n`;
+      if (chatInfo.description)
+        msg += `<b>Description:</b> <code>${escapeHTML(chatInfo.description)}</code>\n`;
+
+      if (chatInfo.photo && chatInfo.photo.small_file_id) {
+        await ctx.replyWithPhoto(chatInfo.photo.small_file_id, {
+          caption: msg,
+          parse_mode: 'HTML',
+        });
+        return;
+      }
+
+      await ctx.reply(msg, { parse_mode: 'HTML' });
+
+      return;
+    }
+  }
+
+  const chatList = await getUserChatListWithStatuses(ctx, userId);
+  const userInfo = chatList.userInfo;
+
+  if (chatList.chatStatuses.length > 0 && userInfo) {
+    const label = userInfo.is_bot ? `Bot` : `User`;
+    let msg = `<b>${label}</b>\n`;
+
+    msg += `<b>ID:</b> <code>${userInfo.id}</code>\n`;
+    if (userInfo.first_name)
+      msg += `<b>First name:</b> <code>${escapeHTML(userInfo.first_name)}</code>\n`;
+    if (userInfo.last_name)
+      msg += `<b>Last name:</b> <code>${escapeHTML(userInfo.last_name)}</code>\n`;
+    if (userInfo.username)
+      msg += `<b>Username:</b> @${escapeHTML(userInfo.username)}\n`;
+
+    msg += `\n<b>Used bot in chats:</b>\n`;
+    msg += (
+      await Promise.all(
+        chatList.chatStatuses.map(async (cs) => {
+          const chatName = await getChatName(ctx, cs.chatId);
+          return `<code>${cs.chatId}</code> — ${cs.status} — ${
+            chatName ? `<code>${escapeHTML(chatName)}</code>` : ''
+          }`;
+        }),
+      )
+    ).join('\n');
+
+    await ctx.reply(msg, { parse_mode: 'HTML' });
+    return;
+  }
+
+  await ctx.reply('No information found for this ID.');
 }
