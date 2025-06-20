@@ -11,6 +11,7 @@ import type { Client, QueryResult } from 'pg';
 import type { Context } from 'telegraf';
 import type { Message, MessageId } from 'telegraf/typings/core/types/typegram';
 import type { ChatInfo, RequestInfo } from '../types';
+import { MediaType } from '../enums';
 
 const query = `
   INSERT INTO media_requests (
@@ -377,4 +378,249 @@ export async function deleteAllLogs(ctx: Context): Promise<void> {
     const plural = delRes.rowCount === 1 ? '' : 's';
     await ctx.reply(`Deleted ${delRes.rowCount} log${plural} for all chats!`);
   }
+}
+
+export async function searchLogs(ctx: Context, isCsv: boolean): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId || !isGlobalAdmin(userId)) return;
+
+  const text = (ctx.message as Message.TextMessage).text;
+  const parts = text.split(' ');
+  if (parts.length < 2) {
+    await ctx.reply(
+      `Usage: /search${isCsv ? '' : '_json'} {phrase or /regex/}`,
+    );
+    return;
+  }
+  const phrase = parts.slice(1).join(' ').trim();
+  if (!phrase) {
+    await ctx.reply('Please provide a phrase or regex to search for.');
+    return;
+  }
+
+  const client = await getClient();
+  const fields = [
+    'CAST(user_id AS TEXT)',
+    'CAST(forward_chat_id AS TEXT)',
+    'CAST(chat_id AS TEXT)',
+    'file_id',
+    'response',
+    'error',
+  ];
+
+  let logs: RequestInfo[] = [];
+  let isRegex = false;
+  let searchValue = phrase;
+  let regexFlags = '';
+  let query: string;
+  let params: any[];
+
+  const regexMatch = phrase.match(/^\/(.+)\/([a-z]*)$/i);
+  if (regexMatch) {
+    isRegex = true;
+    searchValue = regexMatch[1];
+    regexFlags = regexMatch[2] || '';
+    const pgOperator = regexFlags.includes('i') ? '~*' : '~';
+    query = `
+      SELECT * FROM media_requests
+      WHERE ${fields.map((f) => `${f} ${pgOperator} $1`).join(' OR ')}
+      ORDER BY id;
+    `;
+    params = [searchValue];
+  } else {
+    query = `
+      SELECT * FROM media_requests
+      WHERE ${fields.map((f) => `${f} ILIKE $1`).join(' OR ')}
+      ORDER BY id;
+    `;
+    params = [`%${searchValue}%`];
+  }
+
+  try {
+    const reqRes = await client.query<RequestInfo>(query, params);
+    logs = reqRes.rows;
+  } catch (err: any) {
+    if (
+      isRegex &&
+      (err.code === '2201B' ||
+        (err.message &&
+          err.message.toLowerCase().includes('regular expression')))
+    ) {
+      await ctx.reply('Invalid regular expression for database search.');
+      return;
+    }
+    throw err;
+  }
+
+  if (!logs.length) {
+    await ctx.reply('No logs found for this search!');
+    return;
+  }
+
+  let occurrences = 0;
+  const chatIds = new Set<number>();
+  let regex: RegExp;
+  try {
+    const jsRegexFlags = isRegex
+      ? regexFlags.includes('g')
+        ? regexFlags
+        : regexFlags + 'g'
+      : 'gi';
+    regex = isRegex
+      ? new RegExp(searchValue, jsRegexFlags)
+      : new RegExp(searchValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  } catch (err: any) {
+    if (isRegex) {
+      await ctx.reply('Invalid regular expression for JS search.');
+      return;
+    }
+    throw err;
+  }
+
+  for (const row of logs) {
+    chatIds.add(row.chat_id);
+    for (const key of Object.keys(row)) {
+      const val = (row as any)[key];
+      if (typeof val === 'string' || typeof val === 'number') {
+        const str = String(val);
+        let match;
+        if (isRegex) regex.lastIndex = 0;
+        while ((match = regex.exec(str)) !== null) {
+          occurrences++;
+          if (isRegex && match.index === regex.lastIndex) regex.lastIndex++;
+        }
+      }
+    }
+  }
+
+  const now = new Date();
+  const dateString = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+  const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+  const baseFilename = `searchlog_${phrase.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')}_${dateString}_${timeString}`;
+
+  const caption = `Found <b>${occurrences}</b> occurrence${occurrences === 1 ? '' : 's'} in <b>${chatIds.size}</b> chat${chatIds.size === 1 ? '' : 's'}.\nLog records in file: <b>${logs.length}</b>.`;
+
+  if (isCsv) {
+    function escapeCSV(val: any): string {
+      if (val === null || val === undefined) return '';
+      if (val instanceof Date) {
+        return `"${val.toISOString()}"`;
+      }
+      let str = String(val);
+      str = str.replace(/"/g, '""');
+      return `"${str}"`;
+    }
+
+    const csvHeaders = Object.keys(logs[0]);
+    const csvRows = [
+      csvHeaders.map(escapeCSV).join(','),
+      ...logs.map((row) =>
+        csvHeaders.map((h) => escapeCSV(row[h as keyof RequestInfo])).join(','),
+      ),
+    ];
+
+    const csvContent = csvRows.join('\r\n');
+    const csvStream = Readable.from([csvContent]);
+
+    await ctx.replyWithDocument(
+      { source: csvStream, filename: `${baseFilename}.csv` },
+      {
+        caption,
+        parse_mode: 'HTML',
+      },
+    );
+    return;
+  }
+
+  const json = JSON.stringify(logs);
+  const stream = Readable.from([json]);
+
+  await ctx.replyWithDocument(
+    { source: stream, filename: `${baseFilename}.json` },
+    {
+      caption,
+      parse_mode: 'HTML',
+    },
+  );
+}
+
+export async function getFileById(ctx: Context): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId || !isGlobalAdmin(userId)) return;
+
+  const text = (ctx.message as Message.TextMessage).text;
+  const parts = text.trim().split(' ');
+
+  if (parts.length < 2 || isNaN(Number(parts[1]))) {
+    await ctx.reply('Usage: /file {id}');
+    return;
+  }
+
+  const id = Number(parts[1]);
+  const client = await getClient();
+  const res = await client.query<RequestInfo>(
+    'SELECT * FROM media_requests WHERE id = $1;',
+    [id],
+  );
+
+  if (res.rowCount === 0) {
+    await ctx.reply('Log record not found.');
+    return;
+  }
+
+  const log = res.rows[0];
+
+  try {
+    await ctx.telegram.forwardMessage(
+      ctx.chat!.id,
+      log.chat_id,
+      log.message_id,
+    );
+    return;
+  } catch (e) {
+    // Could not forward original message, try admin chat
+  }
+
+  // Try to forward from admin chat using logged_message_id
+  if (log.logged_message_id) {
+    try {
+      await ctx.telegram.forwardMessage(
+        ctx.chat!.id,
+        ADMIN_CHAT_ID,
+        log.logged_message_id,
+      );
+      return;
+    } catch (e) {
+      // Could not forward from admin chat, try file
+    }
+  }
+
+  // Try to send file directly
+  if (log.file_id && log.media_type) {
+    try {
+      switch (log.media_type) {
+        case MediaType.AUDIO:
+          await ctx.replyWithAudio(log.file_id);
+          return;
+        case MediaType.VOICE:
+          await ctx.replyWithVoice(log.file_id);
+          return;
+        case MediaType.VIDEO:
+          await ctx.replyWithVideo(log.file_id);
+          return;
+        case MediaType.VIDEO_NOTE:
+          await ctx.replyWithVideoNote(log.file_id);
+          return;
+        default:
+          await ctx.replyWithDocument(log.file_id);
+          return;
+      }
+    } catch (e) {
+      // Could not send file
+    }
+  }
+
+  await ctx.reply(
+    'Unable to retrieve or forward the file for this log record.',
+  );
 }

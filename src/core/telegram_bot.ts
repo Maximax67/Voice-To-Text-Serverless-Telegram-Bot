@@ -38,6 +38,8 @@ import {
   unban,
   showChatStatistics,
   showGlobalStatistics,
+  searchLogs,
+  getFileById,
 } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
@@ -104,6 +106,10 @@ telegramBot.command('global_stats', showGlobalStatistics);
 
 telegramBot.command('delete_logs', deleteLogs);
 telegramBot.command('delete_all_logs', deleteAllLogs);
+
+telegramBot.command('search', async (ctx) => searchLogs(ctx, true));
+telegramBot.command('search_json', async (ctx) => searchLogs(ctx, false));
+telegramBot.command('file', getFileById);
 
 telegramBot.on(message('audio'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.audio, MediaType.AUDIO),
