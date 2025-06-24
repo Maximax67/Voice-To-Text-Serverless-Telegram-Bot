@@ -20,3 +20,15 @@ export function escapeHTML(text: string): string {
 
   return result + text.slice(lastIndex);
 }
+
+export function escapeCSV(val: any): string {
+  if (val === null || val === undefined) return '';
+  if (val instanceof Date) {
+    return `"${val.toISOString()}"`;
+  }
+
+  let str = String(val);
+  str = str.replace(/"/g, '""');
+
+  return `"${str}"`;
+}

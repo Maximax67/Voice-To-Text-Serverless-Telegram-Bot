@@ -111,3 +111,14 @@ export const LANGUAGE_CODES: Record<string, string> = {
   vi: 'Vietnamese',
   cy: 'Welsh',
 };
+
+export const SPEECH_NOT_DETECTED_PHRASES: Set<string> = new Set([
+  'you',
+  'Thank you',
+  'Дякую',
+  'Дякую за перегляд',
+  'Thanks for watching',
+  'Thank you for watching',
+  'Vielen Dank',
+  'Субтитры сделал DimaTorzok',
+]);

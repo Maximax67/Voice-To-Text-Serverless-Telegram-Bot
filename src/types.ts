@@ -3,16 +3,19 @@ import type {
   Video,
   VideoNote,
   Voice,
+  Document,
+  PhotoSize,
 } from 'telegraf/typings/core/types/typegram';
 import type { FormatStyle, MediaType, Mode } from './enums';
 
 export type MediaContent = Audio | Video | VideoNote | Voice;
+export type MediaContentToSilentLog = Document | PhotoSize;
 
 export interface ChatInfo {
   chat_id: number;
   language: string | null;
   format_style: FormatStyle;
-  default_mode: Mode | null;
+  default_mode: Mode;
   logging_enabled: boolean;
   banned_timestamp: Date;
   created_at: Date;
@@ -31,7 +34,7 @@ export interface RequestInfo {
   file_id: string;
   file_type: string | null;
   file_size: number;
-  duration: number;
+  duration: number | null;
   response: string | null;
   error: string | null;
   language: string | null;

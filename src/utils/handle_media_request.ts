@@ -16,11 +16,137 @@ import { sendText } from './send_text';
 import { getChatInfo } from './get_chat_info';
 import { getClient, redis } from '../core';
 import { ChatState, MediaType, Mode } from '../enums';
-import { SUPPORTED_FILE_EXTENSIONS } from '../constants';
+import {
+  SPEECH_NOT_DETECTED_PHRASES,
+  SUPPORTED_FILE_EXTENSIONS,
+} from '../constants';
 
+import type { Client } from 'pg';
 import type { Context } from 'telegraf';
 import type { Message } from 'telegraf/typings/core/types/typegram';
-import type { MediaContent, RequestInfo } from '../types';
+import type {
+  MediaContent,
+  MediaContentToSilentLog,
+  RequestInfo,
+} from '../types';
+import { retryOnException } from './retry_on_exception';
+
+async function logRequestEarlyExit(
+  ctx: Context,
+  requestInfo: RequestInfo,
+  client: Client,
+  startTime: number,
+  isReply: boolean,
+): Promise<void> {
+  try {
+    if (requestInfo.error) {
+      await sendMessageToAdmins(ctx, requestInfo.error);
+    }
+
+    const loggedMessage = await sendMediaToAdmins(ctx, isReply);
+    requestInfo.logged_message_id = loggedMessage.message_id;
+  } catch {
+    if (requestInfo.error) {
+      requestInfo.error += ' ';
+    }
+
+    requestInfo.error += 'Can not send media to admins!';
+  } finally {
+    requestInfo.total_request_time = Date.now() - startTime;
+    await logRequest(client, requestInfo);
+  }
+}
+
+function getForwardOrigin(message: Message): number | null {
+  if ('forward_origin' in message && message.forward_origin) {
+    const origin = message.forward_origin;
+
+    if (origin.type === 'user') {
+      return origin.sender_user.id;
+    }
+
+    if (origin.type === 'chat') {
+      return origin.sender_chat.id;
+    }
+
+    if (origin.type === 'channel') {
+      return origin.chat.id;
+    }
+
+    return 0;
+  }
+
+  return null;
+}
+
+function setForwardOrigin(message: Message, requestInfo: RequestInfo): void {
+  const origin = getForwardOrigin(message);
+
+  if (origin === null) {
+    return;
+  }
+
+  requestInfo.is_forward = true;
+
+  if (origin) {
+    requestInfo.forward_chat_id = origin;
+  }
+}
+
+export async function logNonTranscribableMediaRequest(
+  ctx: Context,
+  media: MediaContentToSilentLog,
+  mediaType: MediaType,
+  isReply: boolean = false,
+): Promise<void> {
+  const startTime = Date.now();
+
+  const chatId = ctx.chat!.id;
+  const client = await getClient();
+  const chatInfo = await getChatInfo(client, chatId);
+
+  if (!chatInfo.logging_enabled) {
+    return;
+  }
+
+  const fileId = media.file_id;
+  const fileSize = media.file_size!;
+
+  const filename =
+    'file_name' in media && media.file_name ? media.file_name : '';
+  const fileExtension = filename.split('.').pop()!.toLowerCase() || null;
+
+  const message = isReply
+    ? ((ctx.message as any).reply_to_message as Message)
+    : ctx.message!;
+  const userId = message.from!.id;
+
+  const requestInfo: RequestInfo = {
+    chat_id: chatId,
+    mode: Mode.IGNORE,
+    forward_chat_id: null,
+    is_forward: false,
+    file_id: fileId,
+    file_size: fileSize,
+    duration: null,
+    media_type: mediaType,
+    message_id: message.message_id,
+    user_id: userId,
+    file_type: fileExtension,
+    language: chatInfo.language,
+    response: null,
+    error: null,
+    logged_message_id: null,
+    api_request_time: null,
+    media_download_time: null,
+    total_request_time: 0,
+  };
+
+  setForwardOrigin(message, requestInfo);
+
+  await sendMessageToAdmins(ctx, 'Logged media');
+  await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+}
 
 export async function handleMediaRequest(
   ctx: Context,
@@ -28,43 +154,96 @@ export async function handleMediaRequest(
   mediaType: MediaType,
   isReply: boolean = false,
   mode?: Mode,
-) {
+): Promise<void> {
   const startTime = Date.now();
-
-  if (!(await checkRateLimits(ctx))) return;
 
   const chatId = ctx.chat!.id;
   const client = await getClient();
   const chatInfo = await getChatInfo(client, chatId);
 
-  if (chatInfo.banned_timestamp) {
-    await redis.set(`chat:${chatId}`, ChatState.BANNED, {
-      ex: 24 * 60 * 60,
-    });
-    return;
-  }
-
-  if (typeof mode === 'undefined') {
-    if (chatInfo.default_mode === null) {
-      await redis.set(`chat:${chatId}`, ChatState.DISABLED, {
-        ex: 24 * 60 * 60,
-      });
-      return;
-    }
-
-    mode = chatInfo.default_mode;
+  let filename: string = '';
+  if ('file_name' in media && media.file_name) {
+    filename = media.file_name;
   }
 
   const fileId = media.file_id;
   const fileSize = media.file_size!;
   const duration = media.duration;
 
+  const message = isReply
+    ? ((ctx.message as any).reply_to_message as Message)
+    : ctx.message!;
+  const userId = message.from!.id;
+
+  let usedMode: Mode;
+  if (typeof mode === 'undefined') {
+    usedMode = chatInfo.default_mode ?? Mode.IGNORE;
+  } else {
+    usedMode = mode;
+  }
+
+  const requestInfo: RequestInfo = {
+    chat_id: chatId,
+    mode: usedMode,
+    forward_chat_id: null,
+    is_forward: false,
+    file_id: fileId,
+    file_size: fileSize,
+    duration,
+    media_type: mediaType,
+    message_id: message.message_id,
+    user_id: userId,
+    file_type: filename.split('.').pop()!.toLowerCase() || null,
+    language: usedMode === Mode.TRANSLATE ? 'en' : chatInfo.language,
+    response: null,
+    error: null,
+    logged_message_id: null,
+    api_request_time: null,
+    media_download_time: null,
+    total_request_time: 0,
+  };
+
+  setForwardOrigin(message, requestInfo);
+
+  if (!(await checkRateLimits(ctx))) {
+    if (chatInfo.logging_enabled) {
+      requestInfo.mode = Mode.IGNORE;
+      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+    }
+
+    return;
+  }
+
+  if (chatInfo.banned_timestamp) {
+    await redis.set(`chat:${chatId}`, ChatState.BANNED, {
+      ex: 24 * 60 * 60,
+    });
+
+    if (chatInfo.logging_enabled) {
+      requestInfo.mode = Mode.IGNORE;
+      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+    }
+
+    return;
+  }
+
+  if (chatInfo.default_mode === Mode.IGNORE && typeof mode === 'undefined') {
+    await redis.set(`chat:${chatId}`, ChatState.DISABLED, {
+      ex: 24 * 60 * 60,
+    });
+
+    if (chatInfo.logging_enabled) {
+      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+    }
+
+    return;
+  }
+
   const errors: string[] = [];
   if (MAX_FILE_SIZE && fileSize && fileSize > MAX_FILE_SIZE) {
     errors.push(`File is too big. Limit: ${MAX_FILE_SIZE_FORMATTED}!`);
   }
 
-  let filename: string = '';
   let downloadUrl: string | null = null;
   if (!errors.length) {
     try {
@@ -87,50 +266,8 @@ export async function handleMediaRequest(
     } catch {}
   }
 
-  if (!filename) {
-    filename = 'file_name' in media && media.file_name ? media.file_name : '';
-  }
-
   const fileExtension = filename.split('.').pop()!.toLowerCase() || null;
-
-  const message = isReply
-    ? ((ctx.message as any).reply_to_message as Message)
-    : ctx.message!;
-  const userId = message.from!.id;
-
-  const requestInfo: RequestInfo = {
-    chat_id: chatId,
-    mode,
-    forward_chat_id: null,
-    is_forward: false,
-    file_id: fileId,
-    file_size: fileSize,
-    duration,
-    media_type: mediaType,
-    message_id: message.message_id,
-    user_id: userId,
-    file_type: fileExtension,
-    language: mode === Mode.TRANSLATE ? 'en' : chatInfo.language,
-    response: null,
-    error: null,
-    logged_message_id: null,
-    api_request_time: null,
-    media_download_time: null,
-    total_request_time: 0,
-  };
-
-  if ('forward_origin' in message && message.forward_origin) {
-    requestInfo.is_forward = true;
-
-    const origin = message.forward_origin;
-    if (origin.type === 'user') {
-      requestInfo.forward_chat_id = origin.sender_user.id;
-    } else if (origin.type === 'chat') {
-      requestInfo.forward_chat_id = origin.sender_chat.id;
-    } else if (origin.type === 'channel') {
-      requestInfo.forward_chat_id = origin.chat.id;
-    }
-  }
+  requestInfo.file_type = fileExtension;
 
   if (MAX_DURATION && duration && duration > MAX_DURATION) {
     errors.push(`Audio too long. Limit: ${MAX_DURATION} seconds!`);
@@ -151,17 +288,7 @@ export async function handleMediaRequest(
 
     if (chatInfo.logging_enabled) {
       requestInfo.error = errorMessage;
-
-      try {
-        await sendMessageToAdmins(ctx, errorMessage);
-        const loggedMessage = await sendMediaToAdmins(ctx, isReply);
-        requestInfo.logged_message_id = loggedMessage.message_id;
-      } catch {
-        requestInfo.error += ' Can not send media to admins!';
-      } finally {
-        requestInfo.total_request_time = Date.now() - startTime;
-        await logRequest(client, requestInfo);
-      }
+      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
     }
 
     return;
@@ -171,7 +298,7 @@ export async function handleMediaRequest(
 
   try {
     const mediaDownloadStart = Date.now();
-    const fileResponse = await fetch(downloadUrl!);
+    const fileResponse = await retryOnException(() => fetch(downloadUrl!));
     if (!fileResponse.ok) {
       throw new Error('Failed to fetch file from Telegram!');
     }
@@ -186,14 +313,17 @@ export async function handleMediaRequest(
     const mediaFile = new File([blob], filename);
 
     const apiStart = Date.now();
-    const textResponse = await processFile(mediaFile, mode, chatInfo.language);
+    const textResponse = await processFile(
+      mediaFile,
+      usedMode,
+      chatInfo.language,
+    );
     requestInfo.api_request_time = Date.now() - apiStart;
 
     if (
       !textResponse ||
-      textResponse === '.' ||
-      textResponse === 'you' ||
-      textResponse === 'Thank you.'
+      (textResponse.length < 30 &&
+        SPEECH_NOT_DETECTED_PHRASES.has(textResponse.replace(/[.,:!?]/g, '')))
     ) {
       await ctx.reply('Speech not detected');
       isTranscriptionSent = true;
@@ -258,8 +388,8 @@ export async function handleMediaRequest(
       requestInfo.error += '. Unable to send media to admins!';
     }
   } finally {
-    requestInfo.total_request_time = Date.now() - startTime;
     if (chatInfo.logging_enabled) {
+      requestInfo.total_request_time = Date.now() - startTime;
       await logRequest(client, requestInfo);
     }
   }

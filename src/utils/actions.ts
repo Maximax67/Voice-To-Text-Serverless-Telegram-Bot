@@ -90,7 +90,7 @@ export async function handleChangeMode(ctx: Context): Promise<void> {
   const keyboardRows = [
     [{ text: 'Transcribe', callback_data: `set_mode:${Mode.TRANSCRIBE}` }],
     [{ text: 'Translate', callback_data: `set_mode:${Mode.TRANSLATE}` }],
-    [{ text: 'Disable', callback_data: 'set_mode:d' }],
+    [{ text: 'Disable', callback_data: `set_mode:${Mode.IGNORE}` }],
     [{ text: '⬅️ Back', callback_data: 'settings_back' }],
   ];
 
@@ -121,10 +121,7 @@ export async function handleSetFormatStyle(
   await ctx.answerCbQuery('Format style updated!');
 }
 
-export async function handleSetMode(
-  ctx: Context,
-  mode: Mode | null,
-): Promise<void> {
+export async function handleSetMode(ctx: Context, mode: Mode): Promise<void> {
   if (!(await isAdmin(ctx))) {
     await ctx.answerCbQuery(NON_ADMINS_ACCESS_SETTINGS_ERROR);
     return;

@@ -1,10 +1,13 @@
 import { GROQ_API_KEY, GROQ_MODEL, GROQ_TRANSLATE_MODEL } from '../config';
 import { Mode } from '../enums';
+import { retryOnException } from './retry_on_exception';
 
 export async function processFile(
   file: File,
   mode: Mode = Mode.TRANSCRIBE,
   language: string | null,
+  retries = 3,
+  retryDelay = 1000,
 ): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
@@ -22,13 +25,18 @@ export async function processFile(
     url = 'https://api.groq.com/openai/v1/audio/translations';
   }
 
-  const groqResponse = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: formData,
-  });
+  const groqResponse = await retryOnException(
+    () =>
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+        },
+        body: formData,
+      }),
+    retries,
+    retryDelay,
+  );
 
   if (!groqResponse.ok) {
     throw new Error(

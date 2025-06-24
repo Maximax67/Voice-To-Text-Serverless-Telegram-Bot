@@ -1,5 +1,5 @@
 import { getClient } from '../core';
-import { escapeHTML } from './escape_html';
+import { escapeHTML } from './escape';
 import { formatBytesToString } from './format_bytes_to_string';
 import { formatDateTime } from './format_datetime';
 import { getChatName } from './get_chat_info';
@@ -230,10 +230,6 @@ export async function showGlobalStatistics(ctx: Context): Promise<void> {
     forwarded_count: string;
     avg_response_length: string | null;
     avg_total_request_time: string | null;
-    max_duration: string | null;
-    min_duration: string | null;
-    max_file_size: string | null;
-    min_file_size: string | null;
     max_response_length: string | null;
     min_response_length: string | null;
     max_total_request_time: string | null;
@@ -246,12 +242,8 @@ export async function showGlobalStatistics(ctx: Context): Promise<void> {
       COUNT(DISTINCT user_id) AS users_count,
       COUNT(DISTINCT chat_id) AS chats_count,
       COUNT(*) FILTER (WHERE error IS NOT NULL AND error <> '') AS error_count,
-      AVG(duration) AS avg_duration,
-      MAX(duration) AS max_duration,
-      MIN(duration) AS min_duration,
-      AVG(file_size) AS avg_file_size,
-      MAX(file_size) AS max_file_size,
-      MIN(file_size) AS min_file_size,
+      AVG(duration) FILTER (WHERE error IS NULL) AS avg_duration,
+      AVG(file_size) FILTER (WHERE error IS NULL) AS avg_file_size,
       COUNT(*) FILTER (WHERE mode = 0) AS mode_transcribe,
       COUNT(*) FILTER (WHERE mode = 1) AS mode_translate,
       COUNT(*) FILTER (WHERE media_type = 'audio') AS media_audio,
@@ -366,12 +358,7 @@ export async function showGlobalStatistics(ctx: Context): Promise<void> {
     `- Video Note: ${stats.media_video_note}`,
     '',
     `<b>Average duration:</b> ${stats.avg_duration ? Number(stats.avg_duration).toFixed(2) + ' sec' : 'n/a'}`,
-    `<b>Max duration:</b> ${stats.max_duration ? Number(stats.max_duration) + ' sec' : 'n/a'}`,
-    `<b>Min duration:</b> ${stats.min_duration ? Number(stats.min_duration) + ' sec' : 'n/a'}`,
-    '',
     `<b>Average file size:</b> ${stats.avg_file_size ? formatBytesToString(Number(stats.avg_file_size)) : 'n/a'}`,
-    `<b>Max file size:</b> ${stats.max_file_size ? formatBytesToString(Number(stats.max_file_size)) : 'n/a'}`,
-    `<b>Min file size:</b> ${stats.min_file_size ? formatBytesToString(Number(stats.min_file_size)) : 'n/a'}`,
     '',
     `<b>Average response length:</b> ${stats.avg_response_length ? Number(stats.avg_response_length).toFixed(1) + ' chars' : 'n/a'}`,
     `<b>Max response length:</b> ${stats.max_response_length ? stats.max_response_length + ' chars' : 'n/a'}`,

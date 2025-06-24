@@ -41,6 +41,7 @@ import {
   searchLogs,
   getFileById,
   who,
+  logNonTranscribableMediaRequest,
 } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
@@ -94,8 +95,7 @@ telegramBot.command('ban_list', banList);
 
 telegramBot.command('disable_logging', disableLogging);
 telegramBot.command('enable_logging', enableLogging);
-telegramBot.command('logs', async (ctx) => getLogs(ctx, true));
-telegramBot.command('logs_json', async (ctx) => getLogs(ctx, false));
+telegramBot.command('logs', getLogs);
 
 telegramBot.command('chat_list', async (ctx) => chatList(ctx, false));
 telegramBot.command('chat_list_by_requests', async (ctx) =>
@@ -108,8 +108,7 @@ telegramBot.command('global_stats', showGlobalStatistics);
 telegramBot.command('delete_logs', deleteLogs);
 telegramBot.command('delete_all_logs', deleteAllLogs);
 
-telegramBot.command('search', async (ctx) => searchLogs(ctx, true));
-telegramBot.command('search_json', async (ctx) => searchLogs(ctx, false));
+telegramBot.command('search', searchLogs);
 telegramBot.command('file', getFileById);
 telegramBot.command('who', who);
 
@@ -129,6 +128,22 @@ telegramBot.on(message('video'), async (ctx) =>
   handleMediaRequest(ctx, ctx.message.video, MediaType.VIDEO),
 );
 
+telegramBot.on(message('photo'), async (ctx, next: () => Promise<void>) => {
+  const photoSizeArray = ctx.message.photo;
+  const largestPhoto = photoSizeArray[photoSizeArray.length - 1];
+  await logNonTranscribableMediaRequest(ctx, largestPhoto, MediaType.PHOTO);
+  await next();
+});
+
+telegramBot.on(message('document'), async (ctx, next: () => Promise<void>) => {
+  await logNonTranscribableMediaRequest(
+    ctx,
+    ctx.message.document,
+    MediaType.DOCUMENT,
+  );
+  await next();
+});
+
 telegramBot.on('my_chat_member', joinChat);
 telegramBot.on('message', migrateChatMiddleware);
 telegramBot.on('message', async (ctx) => {
@@ -141,20 +156,17 @@ telegramBot.action('change_lang', handleChangeLanguage);
 telegramBot.action('change_format_style', handleChangeFormatStyle);
 telegramBot.action('change_mode', handleChangeMode);
 
-telegramBot.action(/^set_lang:(.+)$/, async (ctx) => {
-  await handleSetLanguage(ctx, ctx.match[1]);
-});
+telegramBot.action(/^set_lang:(.+)$/, async (ctx) =>
+  handleSetLanguage(ctx, ctx.match[1]),
+);
 
-telegramBot.action(/^set_fs:(.+)$/, async (ctx) => {
-  await handleSetFormatStyle(ctx, ctx.match[1]);
-});
+telegramBot.action(/^set_fs:(.+)$/, async (ctx) =>
+  handleSetFormatStyle(ctx, ctx.match[1]),
+);
 
-telegramBot.action(/^set_mode:(\d+|d)$/, async (ctx) => {
-  const value = ctx.match[1];
-  const mode = value === 'd' ? null : (+value as Mode);
-
-  await handleSetMode(ctx, mode);
-});
+telegramBot.action(/^set_mode:(\d+)$/, async (ctx) =>
+  handleSetMode(ctx, +ctx.match[1] as Mode),
+);
 
 telegramBot.action('settings_back', handleSettingsBack);
 telegramBot.action('close_menu', handleCloseMenu);

@@ -1,7 +1,7 @@
 export * from './actions';
 export * from './ban';
 export * from './check_rate_limits';
-export * from './escape_html';
+export * from './escape';
 export * from './format_bytes_to_string';
 export * from './format_datetime';
 export * from './get_chat_id_from_command';
@@ -12,6 +12,7 @@ export * from './is_admin';
 export * from './join_chat';
 export * from './logging';
 export * from './migrate_chat';
+export * from './retry_on_exception';
 export * from './send_text';
 export * from './show_settings_menu';
 export * from './statistics';

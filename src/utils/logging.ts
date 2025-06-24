@@ -5,7 +5,8 @@ import { getClient } from '../core';
 import { isGlobalAdmin } from './is_admin';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
 import { getChatName } from './get_chat_info';
-import { escapeHTML } from './escape_html';
+import { escapeCSV, escapeHTML } from './escape';
+import { MediaType } from '../enums';
 
 import type { Client, QueryResult } from 'pg';
 import type { Context } from 'telegraf';
@@ -16,7 +17,6 @@ import type {
   User,
 } from 'telegraf/typings/core/types/typegram';
 import type { ChatInfo, RequestInfo } from '../types';
-import { MediaType } from '../enums';
 
 const query = `
   INSERT INTO media_requests (
@@ -223,14 +223,14 @@ export async function disableLogging(ctx: Context): Promise<void> {
   });
 }
 
-export async function getLogs(ctx: Context, isCsv: boolean): Promise<void> {
+export async function getLogs(ctx: Context): Promise<void> {
   const userId = ctx.from?.id;
   if (!userId || !isGlobalAdmin(userId)) return;
 
   const chatId = getChatIdFromCommand(ctx);
   if (!chatId) {
     if ((ctx.message as Message.TextMessage).text.indexOf(' ') !== -1) {
-      await ctx.reply(`Usage: /logs${isCsv ? '' : '_json'} {chatId}`);
+      await ctx.reply(`Usage: /logs {chatId}`);
       return;
     }
   }
@@ -285,47 +285,21 @@ export async function getLogs(ctx: Context, isCsv: boolean): Promise<void> {
 
   const baseFilename = `chatlog_${filenamePart}_${dateString}_${timeString}`;
 
-  if (isCsv) {
-    function escapeCSV(val: any): string {
-      if (val === null || val === undefined) return '';
-      if (val instanceof Date) {
-        return `"${val.toISOString()}"`;
-      }
+  const csvHeaders = Object.keys(logs[0]);
+  const csvRows = [
+    csvHeaders.map(escapeCSV).join(','),
+    ...logs.map((row) =>
+      csvHeaders.map((h) => escapeCSV(row[h as keyof RequestInfo])).join(','),
+    ),
+  ];
 
-      let str = String(val);
-      str = str.replace(/"/g, '""');
-      return `"${str}"`;
-    }
-
-    const csvHeaders = Object.keys(logs[0]);
-    const csvRows = [
-      csvHeaders.map(escapeCSV).join(','),
-      ...logs.map((row) =>
-        csvHeaders.map((h) => escapeCSV(row[h as keyof RequestInfo])).join(','),
-      ),
-    ];
-
-    const csvContent = csvRows.join('\r\n');
-    const csvStream = Readable.from([csvContent]);
-
-    await ctx.replyWithDocument(
-      { source: csvStream, filename: `${baseFilename}.csv` },
-      {
-        caption: `CSV logs for ${captionPart}`,
-        parse_mode: 'HTML',
-      },
-    );
-
-    return;
-  }
-
-  const json = JSON.stringify(logs);
-  const stream = Readable.from([json]);
+  const csvContent = csvRows.join('\r\n');
+  const csvStream = Readable.from([csvContent]);
 
   await ctx.replyWithDocument(
-    { source: stream, filename: `${baseFilename}.json` },
+    { source: csvStream, filename: `${baseFilename}.csv` },
     {
-      caption: `JSON logs for ${captionPart}`,
+      caption: `Logs for ${captionPart}`,
       parse_mode: 'HTML',
     },
   );
@@ -385,16 +359,14 @@ export async function deleteAllLogs(ctx: Context): Promise<void> {
   }
 }
 
-export async function searchLogs(ctx: Context, isCsv: boolean): Promise<void> {
+export async function searchLogs(ctx: Context): Promise<void> {
   const userId = ctx.from?.id;
   if (!userId || !isGlobalAdmin(userId)) return;
 
   const text = (ctx.message as Message.TextMessage).text;
   const parts = text.split(' ');
   if (parts.length < 2) {
-    await ctx.reply(
-      `Usage: /search${isCsv ? '' : '_json'} {phrase or /regex/}`,
-    );
+    await ctx.reply(`Usage: /search {phrase or /regex/}`);
     return;
   }
   const phrase = parts.slice(1).join(' ').trim();
@@ -505,43 +477,19 @@ export async function searchLogs(ctx: Context, isCsv: boolean): Promise<void> {
 
   const caption = `Found <b>${occurrences}</b> occurrence${occurrences === 1 ? '' : 's'} in <b>${chatIds.size}</b> chat${chatIds.size === 1 ? '' : 's'}.\nLog records in file: <b>${logs.length}</b>.`;
 
-  if (isCsv) {
-    function escapeCSV(val: any): string {
-      if (val === null || val === undefined) return '';
-      if (val instanceof Date) {
-        return `"${val.toISOString()}"`;
-      }
-      let str = String(val);
-      str = str.replace(/"/g, '""');
-      return `"${str}"`;
-    }
+  const csvHeaders = Object.keys(logs[0]);
+  const csvRows = [
+    csvHeaders.map(escapeCSV).join(','),
+    ...logs.map((row) =>
+      csvHeaders.map((h) => escapeCSV(row[h as keyof RequestInfo])).join(','),
+    ),
+  ];
 
-    const csvHeaders = Object.keys(logs[0]);
-    const csvRows = [
-      csvHeaders.map(escapeCSV).join(','),
-      ...logs.map((row) =>
-        csvHeaders.map((h) => escapeCSV(row[h as keyof RequestInfo])).join(','),
-      ),
-    ];
-
-    const csvContent = csvRows.join('\r\n');
-    const csvStream = Readable.from([csvContent]);
-
-    await ctx.replyWithDocument(
-      { source: csvStream, filename: `${baseFilename}.csv` },
-      {
-        caption,
-        parse_mode: 'HTML',
-      },
-    );
-    return;
-  }
-
-  const json = JSON.stringify(logs);
-  const stream = Readable.from([json]);
+  const csvContent = csvRows.join('\r\n');
+  const csvStream = Readable.from([csvContent]);
 
   await ctx.replyWithDocument(
-    { source: stream, filename: `${baseFilename}.json` },
+    { source: csvStream, filename: `${baseFilename}.csv` },
     {
       caption,
       parse_mode: 'HTML',

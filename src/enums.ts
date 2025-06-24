@@ -3,6 +3,8 @@ export enum MediaType {
   VOICE = 'voice',
   VIDEO_NOTE = 'video_note',
   VIDEO = 'video',
+  PHOTO = 'photo',
+  DOCUMENT = 'document',
 }
 
 export enum FormatStyle {
@@ -20,4 +22,5 @@ export enum ChatState {
 export enum Mode {
   TRANSCRIBE,
   TRANSLATE,
+  IGNORE,
 }
