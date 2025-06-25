@@ -11,6 +11,7 @@ import {
   sendMessageToAdmins,
 } from './logging';
 import { checkRateLimits } from './check_rate_limits';
+import { retryOnException } from './retry_on_exception';
 import { processFile } from './transcribe_file';
 import { sendText } from './send_text';
 import { getChatInfo } from './get_chat_info';
@@ -29,7 +30,6 @@ import type {
   MediaContentToSilentLog,
   RequestInfo,
 } from '../types';
-import { retryOnException } from './retry_on_exception';
 
 async function logRequestEarlyExit(
   ctx: Context,
@@ -37,20 +37,28 @@ async function logRequestEarlyExit(
   client: Client,
   startTime: number,
   isReply: boolean,
+  media: MediaContent | MediaContentToSilentLog,
+  mediaType: MediaType,
 ): Promise<void> {
   try {
     if (requestInfo.error) {
       await sendMessageToAdmins(ctx, requestInfo.error);
     }
 
-    const loggedMessage = await sendMediaToAdmins(ctx, isReply);
-    requestInfo.logged_message_id = loggedMessage.message_id;
-  } catch {
-    if (requestInfo.error) {
-      requestInfo.error += ' ';
-    }
+    const loggedMessage = await sendMediaToAdmins(
+      ctx,
+      isReply,
+      media,
+      mediaType,
+    );
 
-    requestInfo.error += 'Can not send media to admins!';
+    requestInfo.logged_message_id = loggedMessage.message_id;
+  } catch (e) {
+    if (requestInfo.error) {
+      requestInfo.error += ` Can not send media to admins: ${e}`;
+    } else {
+      requestInfo.error = `Can not send media to admins: ${e}`;
+    }
   } finally {
     requestInfo.total_request_time = Date.now() - startTime;
     await logRequest(client, requestInfo);
@@ -145,7 +153,15 @@ export async function logNonTranscribableMediaRequest(
   setForwardOrigin(message, requestInfo);
 
   await sendMessageToAdmins(ctx, 'Logged media');
-  await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+  await logRequestEarlyExit(
+    ctx,
+    requestInfo,
+    client,
+    startTime,
+    isReply,
+    media,
+    mediaType,
+  );
 }
 
 export async function handleMediaRequest(
@@ -208,7 +224,15 @@ export async function handleMediaRequest(
   if (!(await checkRateLimits(ctx))) {
     if (chatInfo.logging_enabled) {
       requestInfo.mode = Mode.IGNORE;
-      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+      await logRequestEarlyExit(
+        ctx,
+        requestInfo,
+        client,
+        startTime,
+        isReply,
+        media,
+        mediaType,
+      );
     }
 
     return;
@@ -221,7 +245,15 @@ export async function handleMediaRequest(
 
     if (chatInfo.logging_enabled) {
       requestInfo.mode = Mode.IGNORE;
-      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+      await logRequestEarlyExit(
+        ctx,
+        requestInfo,
+        client,
+        startTime,
+        isReply,
+        media,
+        mediaType,
+      );
     }
 
     return;
@@ -233,7 +265,15 @@ export async function handleMediaRequest(
     });
 
     if (chatInfo.logging_enabled) {
-      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+      await logRequestEarlyExit(
+        ctx,
+        requestInfo,
+        client,
+        startTime,
+        isReply,
+        media,
+        mediaType,
+      );
     }
 
     return;
@@ -288,13 +328,22 @@ export async function handleMediaRequest(
 
     if (chatInfo.logging_enabled) {
       requestInfo.error = errorMessage;
-      await logRequestEarlyExit(ctx, requestInfo, client, startTime, isReply);
+      await logRequestEarlyExit(
+        ctx,
+        requestInfo,
+        client,
+        startTime,
+        isReply,
+        media,
+        mediaType,
+      );
     }
 
     return;
   }
 
   let isTranscriptionSent = false;
+  let blob: Blob | undefined = undefined;
 
   try {
     const mediaDownloadStart = Date.now();
@@ -303,7 +352,7 @@ export async function handleMediaRequest(
       throw new Error('Failed to fetch file from Telegram!');
     }
 
-    const blob = await fileResponse.blob();
+    blob = await fileResponse.blob();
     requestInfo.media_download_time = Date.now() - mediaDownloadStart;
 
     if (filename.endsWith('.oga')) {
@@ -330,7 +379,14 @@ export async function handleMediaRequest(
 
       if (chatInfo.logging_enabled) {
         await sendMessageToAdmins(ctx, 'Speech not detected');
-        const loggedMessage = await sendMediaToAdmins(ctx, isReply);
+        const loggedMessage = await sendMediaToAdmins(
+          ctx,
+          isReply,
+          media,
+          mediaType,
+          blob,
+          filename,
+        );
         requestInfo.logged_message_id = loggedMessage.message_id;
         requestInfo.total_request_time = Date.now() - startTime;
       }
@@ -350,7 +406,7 @@ export async function handleMediaRequest(
       const loggedMessageIds = await logFileWithTranscription(ctx, messageIds);
       requestInfo.logged_message_id = loggedMessageIds[0].message_id;
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error(error);
 
     const errorMessage = String(error);
@@ -382,10 +438,17 @@ export async function handleMediaRequest(
     }
 
     try {
-      const loggedMessage = await sendMediaToAdmins(ctx, isReply);
+      const loggedMessage = await sendMediaToAdmins(
+        ctx,
+        isReply,
+        media,
+        mediaType,
+        blob,
+        filename,
+      );
       requestInfo.logged_message_id = loggedMessage.message_id;
-    } catch {
-      requestInfo.error += '. Unable to send media to admins!';
+    } catch (e) {
+      requestInfo.error += `. Can not to send media to admins: ${e}`;
     }
   } finally {
     if (chatInfo.logging_enabled) {

@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 
-import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID } from '../config';
+import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID, BOT_TOKEN } from '../config';
 import { getClient } from '../core';
 import { isGlobalAdmin } from './is_admin';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
@@ -16,7 +16,14 @@ import type {
   MessageId,
   User,
 } from 'telegraf/typings/core/types/typegram';
-import type { ChatInfo, RequestInfo } from '../types';
+import type {
+  ChatInfo,
+  RequestInfo,
+  MediaContent,
+  MediaContentToSilentLog,
+  InputFileByBuffer,
+} from '../types';
+import { retryOnException } from './retry_on_exception';
 
 const query = `
   INSERT INTO media_requests (
@@ -103,20 +110,86 @@ function formatMessage(
 export async function sendMediaToAdmins(
   ctx: Context,
   isReply: boolean,
+  media?: MediaContent | MediaContentToSilentLog,
+  mediaType?: MediaType,
+  downloadedContent?: Blob,
+  filename?: string,
 ): Promise<Message> {
   const message = ctx.message!;
   const messageId = isReply
     ? (message as any).reply_to_message.message_id
     : message.message_id;
 
-  return ctx.telegram.forwardMessage(
-    ADMIN_CHAT_ID,
-    message.chat.id,
-    messageId,
-    {
+  try {
+    return await ctx.telegram.forwardMessage(
+      ADMIN_CHAT_ID,
+      message.chat.id,
+      messageId,
+      {
+        message_thread_id: ADMIN_MESSAGE_THREAD_ID,
+      },
+    );
+  } catch (e) {
+    if (typeof media === 'undefined' || typeof mediaType === 'undefined') {
+      throw e;
+    }
+
+    const mediaSendFunctions: Record<
+      MediaType,
+      (chatId: number | string, content: any, extra: any) => Promise<any>
+    > = {
+      [MediaType.VOICE]: ctx.telegram.sendVoice.bind(ctx.telegram),
+      [MediaType.VIDEO_NOTE]: ctx.telegram.sendVideoNote.bind(ctx.telegram),
+      [MediaType.AUDIO]: ctx.telegram.sendAudio.bind(ctx.telegram),
+      [MediaType.VIDEO]: ctx.telegram.sendVideo.bind(ctx.telegram),
+      [MediaType.DOCUMENT]: ctx.telegram.sendDocument.bind(ctx.telegram),
+      [MediaType.PHOTO]: ctx.telegram.sendPhoto.bind(ctx.telegram),
+    };
+
+    const sendFunction = mediaSendFunctions[mediaType];
+
+    try {
+      return await sendFunction(ADMIN_CHAT_ID, media.file_id, {
+        message_thread_id: ADMIN_MESSAGE_THREAD_ID,
+      });
+    } catch {}
+
+    let fileToSend: InputFileByBuffer;
+    if (typeof downloadedContent !== 'undefined') {
+      const arrayBuffer = await downloadedContent.arrayBuffer();
+      const source = Buffer.from(arrayBuffer);
+
+      fileToSend = { source, filename };
+    } else {
+      const fileId = media.file_id;
+      const file = await ctx.telegram.getFile(fileId);
+      const filePath = file.file_path;
+
+      if (!filePath) {
+        throw e;
+      }
+
+      const downloadUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+      const filename =
+        'file_name' in media && media.file_name
+          ? media.file_name
+          : filePath?.split(/[\\/]/).pop();
+
+      const fileResponse = await retryOnException(() => fetch(downloadUrl!));
+      if (!fileResponse.ok) {
+        throw new Error('Failed to fetch file from Telegram!');
+      }
+
+      const arrayBuffer = await fileResponse.arrayBuffer();
+      const source = Buffer.from(arrayBuffer);
+
+      fileToSend = { source, filename };
+    }
+
+    return sendFunction(ADMIN_CHAT_ID, fileToSend, {
       message_thread_id: ADMIN_MESSAGE_THREAD_ID,
-    },
-  );
+    });
+  }
 }
 
 export async function sendMessageToAdmins(

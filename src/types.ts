@@ -10,6 +10,15 @@ import type { FormatStyle, MediaType, Mode } from './enums';
 
 export type MediaContent = Audio | Video | VideoNote | Voice;
 export type MediaContentToSilentLog = Document | PhotoSize;
+export type ReplyContent =
+  | {
+      type: MediaType.PHOTO | MediaType.DOCUMENT;
+      content: MediaContentToSilentLog;
+    }
+  | {
+      type: Exclude<MediaType, MediaType.PHOTO | MediaType.DOCUMENT>;
+      content: MediaContent;
+    };
 
 export interface ChatInfo {
   chat_id: number;
@@ -41,4 +50,9 @@ export interface RequestInfo {
   media_download_time: number | null;
   api_request_time: number | null;
   total_request_time: number;
+}
+
+export interface InputFileByBuffer {
+  source: Buffer;
+  filename?: string;
 }

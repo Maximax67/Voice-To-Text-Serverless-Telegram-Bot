@@ -42,6 +42,7 @@ import {
   getFileById,
   who,
   logNonTranscribableMediaRequest,
+  isMediaContent,
 } from '../utils';
 
 const telegramBot = new Telegraf(BOT_TOKEN);
@@ -62,12 +63,40 @@ telegramBot.command('transcribe', async (ctx) => {
     return;
   }
 
-  await handleMediaRequest(ctx, replyContent.content, replyContent.type, true);
+  if (!isMediaContent(replyContent)) {
+    await logNonTranscribableMediaRequest(
+      ctx,
+      replyContent.content,
+      replyContent.type,
+      true,
+    );
+    await ctx.reply(INVALID_USAGE_ERROR);
+    return;
+  }
+
+  await handleMediaRequest(
+    ctx,
+    replyContent.content,
+    replyContent.type,
+    true,
+    Mode.TRANSCRIBE,
+  );
 });
 
 telegramBot.command('translate', async (ctx) => {
   const replyContent = getReplyContent(ctx);
   if (!replyContent) {
+    await ctx.reply(INVALID_USAGE_ERROR);
+    return;
+  }
+
+  if (!isMediaContent(replyContent)) {
+    await logNonTranscribableMediaRequest(
+      ctx,
+      replyContent.content,
+      replyContent.type,
+      true,
+    );
     await ctx.reply(INVALID_USAGE_ERROR);
     return;
   }
