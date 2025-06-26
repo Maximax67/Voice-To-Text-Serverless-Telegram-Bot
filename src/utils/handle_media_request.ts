@@ -323,11 +323,15 @@ export async function handleMediaRequest(
 
   if (errors.length) {
     const errorMessage = errors.join(' ');
+    requestInfo.error = errorMessage;
 
-    await ctx.reply(errorMessage);
+    try {
+      await ctx.reply(errorMessage);
+    } catch (e) {
+      requestInfo.error += ` Can not send error reply: ${e}`;
+    }
 
     if (chatInfo.logging_enabled) {
-      requestInfo.error = errorMessage;
       await logRequestEarlyExit(
         ctx,
         requestInfo,
@@ -407,34 +411,36 @@ export async function handleMediaRequest(
       requestInfo.logged_message_id = loggedMessageIds[0].message_id;
     }
   } catch (error) {
-    console.error(error);
+    try {
+      const errorMessage = String(error);
+      const formatAdminMessage = (message: string) =>
+        `Error processing media: ${errorMessage}. ${message}`;
 
-    const errorMessage = String(error);
-    const formatAdminMessage = (message: string) =>
-      `Error processing media: ${errorMessage}. ${message}`;
-
-    if (isTranscriptionSent) {
-      if (requestInfo.response) {
-        requestInfo.error = errorMessage;
-        await sendMessageToAdmins(
-          ctx,
-          formatAdminMessage(
-            `Transcription was sent successfully: ${requestInfo.response}`,
-          ),
-          true,
-        );
+      if (isTranscriptionSent) {
+        if (requestInfo.response) {
+          requestInfo.error = errorMessage;
+          await sendMessageToAdmins(
+            ctx,
+            formatAdminMessage(
+              `Transcription was sent successfully: ${requestInfo.response}`,
+            ),
+            true,
+          );
+        } else {
+          requestInfo.error = `${errorMessage}. Speech not detected!`;
+          await sendMessageToAdmins(
+            ctx,
+            formatAdminMessage('Speech not detected!'),
+            true,
+          );
+        }
       } else {
-        requestInfo.error = `${errorMessage}. Speech not detected!`;
-        await sendMessageToAdmins(
-          ctx,
-          formatAdminMessage('Speech not detected!'),
-          true,
-        );
+        requestInfo.error = errorMessage;
+        await ctx.reply('Error processing media');
+        await sendMessageToAdmins(ctx, formatAdminMessage(''), true);
       }
-    } else {
-      requestInfo.error = errorMessage;
-      await ctx.reply('Error processing media');
-      await sendMessageToAdmins(ctx, formatAdminMessage(''), true);
+    } catch (e) {
+      requestInfo.error += `. Can not send message with error: ${e}`;
     }
 
     try {

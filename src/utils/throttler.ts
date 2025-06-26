@@ -3,7 +3,7 @@ import type { Telegraf } from 'telegraf';
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
-  minTime: 50, // ~20 requests per second
+  minTime: 200, // ~5 requests per second
 });
 
 export function throttleTelegramApi(bot: Telegraf<any>) {

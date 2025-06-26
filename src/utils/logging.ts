@@ -771,11 +771,36 @@ export async function who(ctx: Context): Promise<void> {
       if (chatInfo.description)
         msg += `<b>Description:</b> <code>${escapeHTML(chatInfo.description)}</code>\n`;
 
-      if (chatInfo.photo && chatInfo.photo.small_file_id) {
-        await ctx.replyWithPhoto(chatInfo.photo.small_file_id, {
-          caption: msg,
-          parse_mode: 'HTML',
-        });
+      if (chatInfo.photo && chatInfo.photo.big_file_id) {
+        try {
+          const file = await ctx.telegram.getFile(chatInfo.photo.big_file_id);
+          const filePath = file.file_path;
+
+          if (!filePath) {
+            return;
+          }
+
+          const downloadUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+          const fileResponse = await retryOnException(() =>
+            fetch(downloadUrl!),
+          );
+
+          if (!fileResponse.ok) {
+            throw new Error('Failed to fetch file from Telegram!');
+          }
+
+          const arrayBuffer = await fileResponse.arrayBuffer();
+          const source = Buffer.from(arrayBuffer);
+
+          await ctx.replyWithPhoto(
+            { source },
+            {
+              caption: msg,
+              parse_mode: 'HTML',
+            },
+          );
+        } catch {}
+
         return;
       }
 
@@ -785,7 +810,7 @@ export async function who(ctx: Context): Promise<void> {
     }
   }
 
-  const chatList = await getUserChatListWithStatuses(ctx, userId);
+  const chatList = await getUserChatListWithStatuses(ctx, chatId);
   const userInfo = chatList.userInfo;
 
   if (chatList.chatStatuses.length > 0 && userInfo) {
