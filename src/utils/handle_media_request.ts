@@ -152,7 +152,10 @@ export async function logNonTranscribableMediaRequest(
 
   setForwardOrigin(message, requestInfo);
 
-  await sendMessageToAdmins(ctx, 'Logged media');
+  try {
+    await sendMessageToAdmins(ctx, 'Logged media');
+  } catch {}
+
   await logRequestEarlyExit(
     ctx,
     requestInfo,
