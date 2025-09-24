@@ -145,7 +145,7 @@ export async function showChatStatistics(ctx: Context): Promise<void> {
       AVG(LENGTH(response)) AS avg_response_length,
       AVG(total_request_time) AS avg_total_request_time
     FROM media_requests
-    WHERE chat_id = $1
+    WHERE chat_id = $1 AND mode <> ${Mode.IGNORE};
   `,
     [chatId],
   );
@@ -258,6 +258,7 @@ export async function showGlobalStatistics(ctx: Context): Promise<void> {
       MAX(total_request_time) AS max_total_request_time,
       MIN(total_request_time) AS min_total_request_time
     FROM media_requests
+    WHERE mode <> ${Mode.IGNORE};
   `);
 
   const stats = reqRes.rows[0];

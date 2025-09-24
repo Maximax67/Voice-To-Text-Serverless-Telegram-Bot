@@ -1,5 +1,5 @@
 import { Client } from 'pg';
-import { DATABASE_URL, ENVIRONMENT } from '../config';
+import { DATABASE_URL } from '../config';
 import { LANGUAGE_CODES } from '../constants';
 import { FormatStyle, MediaType } from '../enums';
 
@@ -9,12 +9,9 @@ export async function getClient(): Promise<Client> {
   if (!client) {
     client = new Client({
       connectionString: DATABASE_URL,
-      ssl:
-        ENVIRONMENT === 'production'
-          ? {
-              rejectUnauthorized: false,
-            }
-          : false,
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
     await client.connect();
   }
