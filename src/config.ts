@@ -11,9 +11,13 @@ export const KV_REST_API_URL = process.env.KV_REST_API_URL;
 export const KV_REST_API_TOKEN = process.env.KV_REST_API_TOKEN;
 
 export const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-export const GROQ_MODEL = process.env.GROQ_MODEL || 'whisper-large-v3-turbo';
+export const GROQ_MODEL = process.env.GROQ_MODEL
+  ? process.env.GROQ_MODEL.split(',').map(s => s.trim())
+  : ['whisper-large-v3-turbo'];
 export const GROQ_TRANSLATE_MODEL =
-  process.env.GROQ_TRANSLATE_MODEL || 'whisper-large-v3';
+  process.env.GROQ_TRANSLATE_MODEL
+    ? process.env.GROQ_TRANSLATE_MODEL.split(',').map(s => s.trim())
+    : ['whisper-large-v3'];
 
 export const DATABASE_URL = process.env.DATABASE_URL || '';
 

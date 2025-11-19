@@ -1,6 +1,7 @@
 import { GROQ_API_KEY, GROQ_MODEL, GROQ_TRANSLATE_MODEL } from '../config';
 import { Mode } from '../enums';
 import { retryOnException } from './retry_on_exception';
+import { selectRandomListValue } from './select_random_list_value';
 
 export async function processFile(
   file: File,
@@ -14,14 +15,16 @@ export async function processFile(
 
   let url: string;
   if (mode === Mode.TRANSCRIBE) {
-    formData.append('model', GROQ_MODEL);
+    const model = selectRandomListValue(GROQ_MODEL);
+    formData.append('model', model);
     if (language) {
       formData.append('language', language);
     }
 
     url = 'https://api.groq.com/openai/v1/audio/transcriptions';
   } else {
-    formData.append('model', GROQ_TRANSLATE_MODEL);
+    const model = selectRandomListValue(GROQ_TRANSLATE_MODEL);
+    formData.append('model', model);
     url = 'https://api.groq.com/openai/v1/audio/translations';
   }
 

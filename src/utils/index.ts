@@ -13,6 +13,7 @@ export * from './join_chat';
 export * from './logging';
 export * from './migrate_chat';
 export * from './retry_on_exception';
+export * from './select_random_list_value';
 export * from './send_text';
 export * from './show_settings_menu';
 export * from './statistics';
