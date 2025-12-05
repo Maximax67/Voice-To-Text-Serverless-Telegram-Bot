@@ -1,6 +1,11 @@
 import { Readable } from 'stream';
 
-import { ADMIN_CHAT_ID, ADMIN_MESSAGE_THREAD_ID, BOT_TOKEN } from '../config';
+import {
+  ADMIN_CHAT_ID,
+  ADMIN_MESSAGE_THREAD_ID,
+  BOT_TOKEN,
+  TELEGRAM_API_FILE_URL,
+} from '../config';
 import { getClient } from '../core';
 import { isGlobalAdmin } from './is_admin';
 import { getChatIdFromCommand } from './get_chat_id_from_command';
@@ -169,7 +174,7 @@ export async function sendMediaToAdmins(
         throw e;
       }
 
-      const downloadUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+      const downloadUrl = `${TELEGRAM_API_FILE_URL}/bot${BOT_TOKEN}/${filePath}`;
       const filename =
         'file_name' in media && media.file_name
           ? media.file_name
@@ -780,7 +785,7 @@ export async function who(ctx: Context): Promise<void> {
             return;
           }
 
-          const downloadUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+          const downloadUrl = `${TELEGRAM_API_FILE_URL}/bot${BOT_TOKEN}/${filePath}`;
           const fileResponse = await retryOnException(() =>
             fetch(downloadUrl!),
           );

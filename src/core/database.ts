@@ -10,8 +10,8 @@ export async function getClient(): Promise<Client> {
     client = new Client({
       connectionString: DATABASE_URL,
       ssl: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+      },
     });
     await client.connect();
   }

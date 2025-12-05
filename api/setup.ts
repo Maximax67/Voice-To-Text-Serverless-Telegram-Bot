@@ -1,7 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+const TELEGRAM_API_URL =
+  process.env.TELEGRAM_API_URL || 'https://api.telegram.org';
+
 const TELEGRAM_API_BASE = (token: string) =>
-  `https://api.telegram.org/bot${token}`;
+  `${TELEGRAM_API_URL}/bot${token}`;
 
 async function deleteWebhook(botToken: string) {
   const res = await fetch(`${TELEGRAM_API_BASE(botToken)}/deleteWebhook`);

@@ -12,14 +12,17 @@ export const KV_REST_API_TOKEN = process.env.KV_REST_API_TOKEN;
 
 export const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 export const GROQ_MODEL = process.env.GROQ_MODEL
-  ? process.env.GROQ_MODEL.split(',').map(s => s.trim())
+  ? process.env.GROQ_MODEL.split(',').map((s) => s.trim())
   : ['whisper-large-v3-turbo'];
-export const GROQ_TRANSLATE_MODEL =
-  process.env.GROQ_TRANSLATE_MODEL
-    ? process.env.GROQ_TRANSLATE_MODEL.split(',').map(s => s.trim())
-    : ['whisper-large-v3'];
+export const GROQ_TRANSLATE_MODEL = process.env.GROQ_TRANSLATE_MODEL
+  ? process.env.GROQ_TRANSLATE_MODEL.split(',').map((s) => s.trim())
+  : ['whisper-large-v3'];
 
 export const DATABASE_URL = process.env.DATABASE_URL || '';
+export const TELEGRAM_API_URL =
+  process.env.TELEGRAM_API_URL || 'https://api.telegram.org';
+export const TELEGRAM_API_FILE_URL =
+  process.env.TELEGRAM_API_FILE_URL || 'https://api.telegram.org/file';
 
 export const IS_VERCEL = process.env.IS_VERCEL !== '0';
 export const SERVER_URL = process.env.SERVER_URL;

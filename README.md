@@ -83,6 +83,7 @@ Make sure your server is accessible from the public internet and supports HTTPS 
 #### Steps for Non-Vercel Deployment
 
 1. **Clone the repository** and install dependencies:
+
    ```bash
    git clone https://github.com/Maximax67/Voice-To-Text-Serverless-Telegram-Bot.git
    cd Voice-To-Text-Serverless-Telegram-Bot
@@ -90,30 +91,36 @@ Make sure your server is accessible from the public internet and supports HTTPS 
    npm build
    ```
 
-2. **Set environment variables**  
-   Create a `.env` file (see `.env.example`) and set all required variables.  
+2. **Set environment variables**
+   Create a `.env` file (see `.env.example`) and set all required variables.
    For non-Vercel deployments, set:
-   ```
+
+   ```env
    IS_VERCEL=0
    SERVER_URL=https://your-domain.com
    PORT=80
    ```
+
    Replace `https://your-domain.com` with your actual server's public URL.
 
-3. **Expose the correct port**  
+3. **Expose the correct port**
    Make sure your hosting provider allows incoming HTTP requests on the port you specify (default is 80).
 
-4. **Start the bot**  
+4. **Start the bot**
+
    ```bash
    npm run start
    ```
+
    The bot will listen for Telegram webhook events at `http://your-domain.com/api`.
 
-5. **Set up the webhook**  
+5. **Set up the webhook**
    Trigger the `/api/setup` route to register your webhook with Telegram:
-   ```
+
+   ```bash
    curl "http://your-domain.com/api/setup?token=your-secret-token"
    ```
+
    Replace `your-domain.com` and `your-secret-token` with your actual values.
 
 ### Connecting to PostgreSQL
@@ -138,14 +145,21 @@ The Redis instance is used for storing rate-limiting data for both individual us
 Set up the `.env` file according to `.env.example` or directly configure these values in Vercel's environment variables:
 
 - **BOT_TOKEN**: The token provided by BotFather when creating your bot.
-- **GROQ_API_KEY**: The key you get from [Groq](https://groq.com/), which will be used to transcribe the audio files.
+- **KV_REST_API_URL**: The Upstash Redis REST API URL used to store transient/state data (if using Upstash). See Upstash docs for Vercel integration.
+- **KV_REST_API_TOKEN**: The Upstash Redis REST API token used to authenticate requests to the Upstash REST API.
+- **GROQ_API_KEY**: The key you get from Groq, which will be used to transcribe the audio files.
 - **GROQ_MODEL**: The transcription model to use. Available models include:
 
   - `whisper-large-v3`
   - `whisper-large-v3-turbo`
   - `distil-whisper-large-v3-en`
-
-- **GROQ_TRANSLATE_MODEL**: The translation model to use. Currently [Groq](https://groq.com/) supports only `whisper-large-v3` for translation.
+- **GROQ_TRANSLATE_MODEL**: The translation model to use. Currently Groq supports only `whisper-large-v3` for translation.
+- **IS_VERCEL**: Set to `1` if deployed on Vercel. If `0`, the app will use `SERVER_URL` and `PORT` instead for local/server deployments.
+- **SERVER_URL**: The public URL of your server (used when `IS_VERCEL=0`). Example: `https://example.com`.
+- **PORT**: Port to run the server on when `IS_VERCEL=0` (for local or non-Vercel deployments).
+- **DATABASE_URL**: PostgreSQL connection URL in the format `postgres://username:password@host:port/database`.
+- **TELEGRAM_API_URL**: Custom base URL for the Telegram API. If not set, the default `https://api.telegram.org` is used.
+- **TELEGRAM_API_FILE_URL**: Custom base URL for Telegram file downloads. If not set, the default `https://api.telegram.org/file` is used.
 - **MAX_FILE_SIZE**: Maximum allowed file size for audio files. Default is 10 MB.
 - **MAX_DURATION**: Maximum duration for the audio. Default is 5 minutes (300 seconds).
 - **USER_RATE_LIMIT**: Maximum number of requests per user within the time window. Default is 5 requests.
@@ -155,24 +169,20 @@ Set up the `.env` file according to `.env.example` or directly configure these v
 - **ADMIN_CHAT_ID**: Admin chat id for logs. Logging disabled if not set or set to 0.
 - **ADMIN_MESSAGE_THREAD_ID**: Admin thread id for logs (if supergroup).
 - **ADMINS_IDS**: List of admins separated by comma ids for ban, unban, logs, chat list and statistics features.
-- **UTC_OFFSET**: Sets the time difference from UTC in hours. Use a positive number for time zones ahead of UTC (e.g. `2` for UTC+2), and a negative number for those behind (e.g. `-5` for UTC-5).
-- **SETUP_SECRET_TOKEN**: A secret token used to secure an HTTP route /api/setup that sets the webhook when accessed with this token. After deployment, you can trigger the webhook setup by hitting:
-
-  ```bash
-  curl "https://your-app.vercel.app/api/setup?token=your-secret-token"
-  ```
-
-- **TELEGRAM_SECRET_TOKEN**: A secret token to protect your Telegram webhook from unauthorized requests. It ensures that only Telegram can send updates to your bot, adding an extra layer of security.
+- **UTC_OFFSET**: Sets the time difference from UTC in hours.
+- **SETUP_SECRET_TOKEN**: A secret token used to secure an HTTP route `/api/setup`.
+- **TELEGRAM_SECRET_TOKEN**: A secret token to protect your Telegram webhook.
 
 ### Setting up the Telegram webhook
 
 To set up the Telegram webhook, simply make a **single request** to the following URL:
 
-```
-https://your-app.vercel.app/api/setup?token=your-secret-token
+```bash
+curl https://your-app.vercel.app/api/setup?token=your-secret-token
 ```
 
 Replace:
+
 - `your-app` with your actual Vercel app name.
 - `your-secret-token` with the value of your `SETUP_SECRET_TOKEN` environment variable.
 

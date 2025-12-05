@@ -3,6 +3,7 @@ import {
   MAX_DURATION,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_FORMATTED,
+  TELEGRAM_API_FILE_URL,
 } from '../config';
 import {
   logRequest,
@@ -295,7 +296,7 @@ export async function handleMediaRequest(
       const fileSize = file.file_size;
 
       downloadUrl = filePath
-        ? `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`
+        ? `${TELEGRAM_API_FILE_URL}/bot${BOT_TOKEN}/${filePath}`
         : null;
 
       filename =

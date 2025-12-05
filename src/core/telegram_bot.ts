@@ -2,7 +2,7 @@ import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { useNewReplies } from 'telegraf/future';
 
-import { BOT_TOKEN } from '../config';
+import { BOT_TOKEN, TELEGRAM_API_URL } from '../config';
 import {
   INVALID_MESSAGE_TYPE_ERROR,
   INVALID_USAGE_ERROR,
@@ -45,7 +45,11 @@ import {
   isMediaContent,
 } from '../utils';
 
-const telegramBot = new Telegraf(BOT_TOKEN);
+const telegramBot = new Telegraf(BOT_TOKEN, {
+  telegram: {
+    apiRoot: TELEGRAM_API_URL,
+  },
+});
 
 throttleTelegramApi(telegramBot);
 
