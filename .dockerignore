@@ -1,0 +1,29 @@
+# Local dependencies and build artifacts
+node_modules
+public
+dist
+
+# Environment and secrets
+.env
+.env.*
+
+# Git history and configuration
+.git
+.gitignore
+
+# Docker metadata
+Dockerfile
+.dockerignore
+
+# Documentation and code quality tools
+README.md
+LICENSE.md
+.prettierrc
+.env.example
+
+# OS and Editor junk
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.log
